@@ -2,5 +2,4 @@
 name = "midi"
 version = "0.1.0"
 authors = ["poidl <hoitaus@gmail.com>"]
-
-[dependencies]
+#workspace = "../../yassy"
