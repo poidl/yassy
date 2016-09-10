@@ -7,6 +7,9 @@ if [ ! -d "$LV2DIR" ]; then
   mkdir -p $LV2DIR;
 fi
 if [ -d "$DEST" ]; then
+    if [ ! -d "$BACKUPDIR" ]; then
+        mkdir -p $BACKUPDIR;
+    fi
     if [ -d "$BACKUPDIR/$BUNDLE" ]; then
         rm -r $BACKUPDIR/$BUNDLE
     fi
