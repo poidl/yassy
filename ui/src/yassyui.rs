@@ -5,11 +5,8 @@ use std::thread;
 use std::sync::mpsc;
 use websocket::{Message, Sender, Receiver};
 
-// use websocket::{Server, Message, Sender, Receiver};
-// use websocket::server::Connection;
 use websocket::server::request::Request;
 use websocket::client;
-// use websocket::client::*;
 use websocket::message::Type;
 use websocket::header::WebSocketProtocol;
 use websocket::stream::WebSocketStream;
@@ -23,7 +20,6 @@ pub struct yassyui {
     pub write: lv2::LV2UIWriteFunction,
     pub extwidget: lv2::LV2UIExternalUIWidget,
     pub showing: bool,
-    // pub tcplistener: TcpListener,
     pub sender: mpsc::Sender<f32>,
     pub receiver: mpsc::Receiver<f32>,
 }
@@ -44,16 +40,13 @@ impl yassyui {
             host: ptr::null(),
             controller: ptr::null(),
             write: None,
-            showing: false, /* tcplistener: TcpListener::bind("127.0.0.1:2794").unwrap()
-                             * sender: tx, */
+            showing: false,
             sender: tx,
             receiver: rx,
         };
         ui
     }
-    // pub fn receive(&self, val: f32) {
-    //     println!("Hello", );
-    // }
+
     pub fn connect(&mut self,
                    write_function: lv2::LV2UIWriteFunction,
                    controller: lv2::LV2UIController) {
@@ -85,43 +78,43 @@ impl yassyui {
                 // receive parameter values, translate it to a Message and send to
                 // send_loop
                 thread::spawn(move || param_as_message_to_sendloop(tx1_to_send, rx_param));
-                unsafe {
-                    // unsafe following line works around calling on_ws_receive()
-                    // with raw pointer (raw opinters are not "send")
-                    // TODO: dangerous?
-                    let ctrl = &*(controller as *const i64);
 
+                let request = Request::read(connection.0, connection.1).unwrap();
+                let headers = request.headers.clone(); // Keep the headers so we can check them
 
-                    let request = Request::read(connection.0, connection.1).unwrap();
-                    let headers = request.headers.clone(); // Keep the headers so we can check them
+                request.validate().unwrap(); // Validate the request
 
-                    request.validate().unwrap(); // Validate the request
+                let mut response = request.accept(); // Form a response
 
-                    let mut response = request.accept(); // Form a response
-
-                    if let Some(&WebSocketProtocol(ref protocols)) = headers.get() {
-                        if protocols.contains(&("rust-websocket".to_string())) {
-                            // We have a protocol we want to use
-                            response.headers
-                                .set(WebSocketProtocol(vec!["rust-websocket".to_string()]));
-                        }
+                if let Some(&WebSocketProtocol(ref protocols)) = headers.get() {
+                    if protocols.contains(&("rust-websocket".to_string())) {
+                        // We have a protocol we want to use
+                        response.headers
+                            .set(WebSocketProtocol(vec!["rust-websocket".to_string()]));
                     }
-                    let mut client = response.send().unwrap(); // Send the response
+                }
+                let mut client = response.send().unwrap(); // Send the response
 
-                    let ip = client.get_mut_sender()
-                        .get_mut()
-                        .peer_addr()
-                        .unwrap();
+                let ip = client.get_mut_sender()
+                    .get_mut()
+                    .peer_addr()
+                    .unwrap();
 
-                    println!("Connection from {}", ip);
+                println!("Connection from {}", ip);
 
-                    let message: Message = Message::text("Hello".to_string());
-                    client.send_message(&message).unwrap();
+                let message: Message = Message::text("Hello".to_string());
+                client.send_message(&message).unwrap();
 
-                    let (mut sender, mut receiver) = client.split();
+                let (mut sender, mut receiver) = client.split();
 
-                    // send to browser
-                    thread::spawn(move || send_loop(&mut sender, rx_sendloop));
+                // send to browser
+                thread::spawn(move || send_loop(&mut sender, rx_sendloop));
+
+                // following line works around calling on_ws_receive()
+                // with raw pointer (raw opinters are not "send")
+                // TODO: dangerous?
+                unsafe { 
+                    let ctrl = &*(controller as *const i64);
 
                     // receive from browser
                     thread::spawn(move || {
@@ -131,15 +124,6 @@ impl yassyui {
             }
             _ => println!("error"),
         };
-    }
-}
-
-fn on_ws_receive(write: lv2::LV2UIWriteFunction, controller: &i64, f: &f32) {
-
-    let ctrl = controller as *const i64 as lv2::LV2UIController;
-    if let Some(ref func) = write {
-        (*func)(ctrl, 2, 4, 0, f as *const f32 as *const libc::c_void);
-        println!("bla");
     }
 }
 
@@ -189,11 +173,13 @@ fn send_loop(txws: &mut client::Sender<WebSocketStream>, rx: mpsc::Receiver<Mess
     }
 }
 
+// Receive from browser
+
 fn receive_loop(tx: mpsc::Sender<Message>,
                 rxws: &mut client::Receiver<WebSocketStream>,
                 write_function: lv2::LV2UIWriteFunction,
                 ctrl: &i64) {
-    // receive from browser
+    // Loop over incoming ws messages               
     for message in rxws.incoming_messages() {
 
         let message: Message = message.unwrap();
@@ -229,5 +215,14 @@ fn receive_loop(tx: mpsc::Sender<Message>,
                 }
             }
         }
+    }
+}
+
+fn on_ws_receive(write: lv2::LV2UIWriteFunction, controller: &i64, f: &f32) {
+
+    let ctrl = controller as *const i64 as lv2::LV2UIController;
+    if let Some(ref func) = write {
+        (*func)(ctrl, 2, 4, 0, f as *const f32 as *const libc::c_void);
+        println!("bla");
     }
 }

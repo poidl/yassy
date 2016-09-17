@@ -6,7 +6,7 @@ workspace = ".."
 
 [dependencies]
 libc = "*"
-lv2 = { path = "../lv2" }
+lv2 = { path = "../../lv2" }
 websocket = "*"
 
 [lib]
