@@ -136,7 +136,7 @@ impl Cumsum for [f64] {
     }
 }
 
-pub fn blit_4T() -> Box<[f64]> {
+pub fn blit_4t() -> Box<[f64]> {
     // Bandlimited impulse segment for sawtooth with BLIT (bandlimited impulse train) approach. References:
     // Stilson, T. and Smith, J., 1996: Alias-free digital synthesis of classic analog waveforms. Proc. International Computer Music Conference
     // Frei, B.: Digital sound generation. Institute for Computer Music and Sound Technology (ICST) Zurich University of the Arts.

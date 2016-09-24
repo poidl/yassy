@@ -44,12 +44,12 @@ pub extern fn run(instance: lv2::Lv2handle, n_samples: u32) {
                         (*synth).osc.set_dphase(f0,(*synth).fs);
 
                         // TODO don't set fs here
-                        (*synth).oscST.reset((*synth).fs);
-                        (*synth).oscST.set_f0fn(f0);
+                        (*synth).OscBLIT.reset((*synth).fs);
+                        (*synth).OscBLIT.set_f0fn(f0);
 
                         for i in istart-1..n_samples {
                             // let amp = (*synth).osc.get() as f32;
-                            let amp = (*synth).oscST.get() as f32;
+                            let amp = (*synth).OscBLIT.get() as f32;
                             *output.offset(i as isize) = amp;
                         }
                     }
@@ -79,7 +79,7 @@ pub extern fn run(instance: lv2::Lv2handle, n_samples: u32) {
 
             for i in 0..n_samples {
                 // let amp = (*synth).osc.get();
-                let amp = (*synth).oscST.get();
+                let amp = (*synth).OscBLIT.get();
                 *output.offset(i as isize) = (amp as f32) * coef;
             }
 

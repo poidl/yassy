@@ -12,8 +12,13 @@ use midi;
 use midi::*;
 use synth::*;
 
+// Number of parameters
+const NPARAMS: usize = 3;
+
 pub enum ParamName {
     Gain,
+    Osc1,
+    Osc2
 }
 
 pub trait HasFs {
@@ -26,18 +31,22 @@ pub struct SynthPlugin {
     pub audio_out: *mut f32,
     pub synth: synth::Synth,
     fs: f64,
-    pub params: [*mut f32; 1],
+    pub params: [*mut f32; NPARAMS],
 }
 
 impl SynthPlugin {
     pub fn new() -> SynthPlugin {
-        SynthPlugin {
+        let synth = SynthPlugin {
             midi_in: &0u8,
             audio_out: &mut 0f32,
             synth: synth::Synth::new(),
             fs: 0f64,
-            params: [&mut 0.5f32; 1],
+            params: [&mut 0.5f32, &mut 1.0f32, &mut 1.0f32],
+        };
+        if synth.params.len() != NPARAMS {
+            panic!("Wrong number of parameters")
         }
+        synth
     }
     pub fn noteon(&mut self, f0: f32, vel: f32) {
         self.synth.noteon(f0, vel);
@@ -51,9 +60,21 @@ impl SynthPlugin {
     pub fn get_amp(&mut self) -> f32 {
         unsafe {
             let g = *(self.params[ParamName::Gain as usize]);
+            let p1 = *(self.params[ParamName::Osc1 as usize]);
+            let p2 = *(self.params[ParamName::Osc1 as usize]);
+            self.synth.voice.osc1.is_on[0] = toBool(p1);
+            self.synth.voice.osc1.is_on[1] = toBool(p2);
             // println!("g: {}", g);
             g * self.synth.get_amp()
             // self.synth.get_amp()
         }
     }
+}
+
+pub fn toBool(paramval: f32) -> bool {
+    // let half = 127f32/2f32;
+    if paramval < 0.5f32 {
+        return false
+    }
+    return true
 }

@@ -6,6 +6,7 @@ mod oscillator;
 mod voice;
 mod lv2_plugin;
 mod synth;
+pub mod utils;
 pub mod plugin;
 
 use std::ptr;

@@ -3,7 +3,7 @@ use voice;
 use voice::*;
 
 pub struct Synth {
-    voice: voice::Voice,
+    pub voice: voice::Voice,
 }
 
 impl Synth {
@@ -27,9 +27,6 @@ impl Synth {
     pub fn noteoff(&mut self) {
         self.voice.on = false;
     }
-    // fn controlevent(&mut self, paramId, paramVal) {
-    //     self.updateParam
-    // }
     pub fn get_amp(&mut self) -> f32 {
         self.voice.get_amp()
     }

@@ -93,9 +93,10 @@ impl Lv2SynthPlugin {
         self.plugin.get_amp()
     }
     fn map_params(&mut self, port: u32, data: *mut libc::c_void) {
-        let nparams = 1;
+        
+        let nparams = self.plugin.params.len();
         let iport = port - 2; //TODO: don't hardcode number of input/output ports
-        if iport <= nparams - 1 {
+        if iport <= nparams as u32 - 1 {
             println!("connecting port: {}", port);
             self.plugin.params[iport as usize] = data as *mut f32;
             // println!("param: {}",  *(self.synth.params[0]));
