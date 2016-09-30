@@ -15,5 +15,3 @@ browser based ui for yassy using websocket
 ### ./midi/
 Minimal midi message processing in Rust
 
-### ./lv2/
-Minimal lv2 interface for Rust
