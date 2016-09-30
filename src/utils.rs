@@ -1,4 +1,4 @@
-extern crate rgsl;
+extern crate mygsl;
 
 use std::f64;
 
@@ -100,7 +100,7 @@ fn kaiser_element(n: u32, alpha: f64, len: u32) -> f64 {
     let lenf = len as f64;
     let mut tmp= 2f64*nf/(lenf-1f64)-1f64;
     tmp = pi*alpha* ( 1f64- tmp.powf(2f64) ).sqrt();
-    rgsl::bessel::I0(tmp) / rgsl::bessel::I0( pi*alpha )
+    mygsl::rgsl_sf_bessel_io(tmp) / mygsl::rgsl_sf_bessel_io( pi*alpha )
 }
 
 pub trait Kaiser {

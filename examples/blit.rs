@@ -1,6 +1,6 @@
 #![allow(unused_variables)]
 extern crate yassy;
-extern crate rgsl;
+extern crate mygsl;
 extern crate plot;
 extern crate gnuplot;
 
@@ -99,31 +99,32 @@ fn main() {
     let mut fh = [0f64;NN];
     for i in 0..hk.len() {
         fh[i]=hk[i];
+        println!("i: {}",i);
     }
+
+
+    mygsl::fft::real_radix2::transform(&mut fh,1,NN);
+    //
+    // magnitude (abs) of Re and Im
+    let mut fhabs : [f64;NN/2 +1]=[f64::NAN;NN/2 +1];
+    for ii in 0..NN/2 {
+        fhabs[ii]=(fh[ii].powf(2f64)+fh[NN-1-ii].powf(2f64)).sqrt();
+    }
+
+    t.mult(&(1f64/nipt));
+    let mut fg = gnuplot::Figure::new();
+    fg.set_terminal("svg","./examples/figures/segment.svg");
+    fg.axes2d()
+    .lines(t.iter(), cs.iter(), &[]);
+    fg.show();
+
+    let blit = utils::blit_4t();
+    let mut fg = gnuplot::Figure::new();
+    fg.set_terminal("svg","./examples/figures/blit_4T.svg");
+    fg.axes2d()
+    .lines(t.iter(), blit.iter(), &[]);
+    fg.show();
+
+    // let outname = "./examples/figures/frei_fig6.svg";
+    // plot::plot_ampl_spec(nt, nppt, NN, fs, &fhabs, outname)
 }
-
-    // rgsl::fft::real_radix2::transform(&mut fh,1,NN);
-    // //
-    // // magnitude (abs) of Re and Im
-    // let mut fhabs : [f64;NN/2 +1]=[f64::NAN;NN/2 +1];
-    // for ii in 0..NN/2 {
-    //     fhabs[ii]=(fh[ii].powf(2f64)+fh[NN-1-ii].powf(2f64)).sqrt();
-    // }
-
-    // t.mult(&(1f64/nipt));
-    // let mut fg = gnuplot::Figure::new();
-    // fg.set_terminal("svg","./examples/figures/segment.svg");
-    // fg.axes2d()
-    // .lines(t.iter(), cs.iter(), &[]);
-    // fg.show();
-
-//     let blit = utils::blit_4T();
-//     let mut fg = gnuplot::Figure::new();
-//     fg.set_terminal("svg","./examples/figures/blit_4T.svg");
-//     fg.axes2d()
-//     .lines(t.iter(), blit.iter(), &[]);
-//     fg.show();
-
-//     let outname = "./examples/figures/frei_fig6.svg";
-//     plot::plot_ampl_spec(nt, nppt, NN, fs, &fhabs, outname)
-// }

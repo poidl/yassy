@@ -1,6 +1,6 @@
 #![allow(unused_variables)]
 extern crate yassy;
-extern crate rgsl;
+extern crate mygsl;
 extern crate plot;
 
 use yassy::utils;
@@ -29,7 +29,7 @@ fn main() {
     // will also
     // increase the frequency resolution. See the book of Frei, especially
     // the appendix with the MATLAB code listing. Note that we use a different
-    // number of points, because we have to use the real_radix2 fft algorithm of rgsl.
+    // number of points, because we have to use the real_radix2 fft algorithm of gsl.
 
     let nt: usize = 10;
     let nppt: usize = 100;
@@ -99,7 +99,7 @@ fn main() {
     for i in 0..hk.len() {
         fh[i]=hk[i];
     }
-    rgsl::fft::real_radix2::transform(&mut fh,1,NN);
+    mygsl::fft::real_radix2::transform(&mut fh,1,NN);
     //
     // magnitude (abs) of Re and Im
     let mut fhabs : [f64;NN/2 +1]=[f64::NAN;NN/2 +1];

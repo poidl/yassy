@@ -9,14 +9,13 @@ authors = ["stefan"]
 
 [dependencies]
 libc = "*"
-GSL = "*"
-midi = { path = "midi" }
+mygsl = { path = "mygsl" }
+midi= { path = "midi" }
 lv2 = { path = "../lv2" }
 
 [lib]
 name = "yassy"
 crate-type = ["rlib","dylib"] # ?
-# test = false # disable unit tests for this target unit. annoying output
 
 [dev-dependencies] # for testing/documentation
 gnuplot = "*"

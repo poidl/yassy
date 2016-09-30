@@ -1,0 +1,11 @@
+[package]
+name = "mygsl"
+version = "0.1.0"
+authors = ["Stefan <hoitaus@gmail.com>"]
+
+[dependencies]
+libc="*"
+
+[lib]
+name = "mygsl"
+crate-type = ["rlib","dylib"]

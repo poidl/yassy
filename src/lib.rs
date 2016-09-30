@@ -2,10 +2,10 @@ extern crate libc;
 extern crate midi;
 extern crate lv2;
 
-mod oscillator;
-mod voice;
-mod lv2_plugin;
-mod synth;
+pub mod oscillator;
+pub mod voice;
+pub mod lv2_plugin;
+pub mod synth;
 pub mod utils;
 pub mod plugin;
 
