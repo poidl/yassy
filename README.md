@@ -12,9 +12,6 @@ The code in the /example directory reproduces e.g. Fig. 8 of the book.
 ### ./ui/
 browser based ui for yassy using websocket
 
-### ./host/
-jack host for yassy
-
 ### ./midi/
 Minimal midi message processing in Rust
 
