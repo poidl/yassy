@@ -154,7 +154,7 @@ pub fn blit_4t() -> Box<[f64]> {
         panic!("inconsistent variables");
     }
 
-    let fs = 48000f64; // sampling frequency 1/T.
+    let fs = 44100f64; // sampling frequency 1/T.
     let fc = 15000f64; // cutoff frequency 1/Tc.
 
     let pi = f64::consts::PI;

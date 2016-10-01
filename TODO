@@ -1,1 +1,9 @@
+Oscillator:
+*) make blit_4t() dependent of fs, use fs during initialization
+*) valgrind shows invalid reads in the following line:
+                self.c = -*self.f.offset(self.m as isize + self.i as isize);
+*) isn't alpha just twice the phase increment fnn
+*) clean up f: (*Box::into_raw(utils::blit_4t())).as_ptr()
+
+Other:
 *) there is a GSL dependency in utils

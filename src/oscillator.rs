@@ -120,16 +120,16 @@ impl OscBLIT {
     pub fn new() -> OscBLIT {
         unsafe{
             OscBLIT {
-                n: 0u32,
-                m: 0u32, // number of entries in half-segment of integratied bandlimited impulse
+                n: 2u32.pow(31), // follow notation of Frei (p. 3)
+                m: (2*(2700-1)+1) as u32,
                 fs: 0f64, // sample rate            
                 c: 0f64,    
                 fac_i: 0f64, // avoid unnecessary runtime multiplication
                 fac_alpha: 0f64,
                 fac_fn: 0f64,
                         
-                a: 0i32, // phase. Wavetable size is 2N. start at zero, wrap at N from 1 to -1
-                b: 0i32, // a, phase shifted by N
+                a: 0i32, // phase. Wavetable size is 2N. start at -N, wrap at N from 1 to -1
+                b: 0i32, // a, phase shifted by N (start at 0)
                 f0: 0f64, // fundamental frequency
                 fnn: 0u32, // phase increment
                 
@@ -142,11 +142,10 @@ impl OscBLIT {
         }
     }
     pub fn set_fs(& mut self, fs: f64) {
-        self.n = 2u32.pow(31); // follow notation of Frei (p. 3)
-        self.m = (2*(2700-1)+1) as u32;
         self.fs = fs;
+        println!("************* fs: {}", fs);
         let c = 4 as f64 * self.n as f64;
-        self.fac_i = self.m as f64 *fs/c;
+        self.fac_i = self.m as f64 *fs/c; // m*fs/c= m*fs/(4*n)
         self.fac_alpha = c/fs;
         self.fac_fn = 2f64*self.n as f64/self.fs;
     }
@@ -154,7 +153,7 @@ impl OscBLIT {
         self.b =  0;
         self.a =  self.b.wrapping_add(self.n as i32);
         self.f0=f0;
-        self.fnn =  (f0*self.fac_fn) as u32;
+        self.fnn =  (f0*self.fac_fn) as u32; // 2*N*f0/fs
     }
     // pub fn set_f0fn(&mut self, f0: f64) {
     //     self.f0 = f0;
@@ -169,14 +168,20 @@ impl OscBLIT {
         self.abs_a = self.a ^ mask; // xor with mask is equivalent to -1*(a+1) for a<0, and a no-op otherwise. http://stackoverflow.com/questions/12041632/how-to-compute-the-integer-absolute-value
     }
     pub fn set_alpha_i(&mut self) {
-        self.alpha =  (self.f0*self.fac_alpha) as u32;
-        let tmp = (self.a as f64 /self.f0) *self.fac_i;
+        // TODO: alpha is just twice the phase increment fnn
+        self.alpha =  (self.f0*self.fac_alpha) as u32; // self.alpha = 0..2N
+        let tmp = self.m as f64* (1f64 + self.a as f64 /(self.alpha as f64));
+        if self.abs_a < (self.alpha as i32) {
+            println!("APPLY A/alpha: {}", self.a as f64/self.alpha as f64); 
+            println!("segment index (0..2): {}", (tmp as f64)/(self.m as f64));
+        }
         self.i = tmp.trunc() as i32;
     }
     pub fn step_c(&mut self) {
         if self.abs_a < (self.alpha as i32) {
             unsafe {
-                self.c = -*self.f.offset(self.m as isize + self.i as isize);
+                // TODO: valgrind shows invalid reads in the following line:
+                self.c = -*self.f.offset(self.i as isize);
             }
             // println!("apply {}", self.c);
         } else {
@@ -189,6 +194,7 @@ impl OscBLIT {
         // println!("self.c {}", self.c);
         // println!("self.i {}", self.i);
         // println!(" ");
+        // self.c = 0f64;
         self.d = self.c + self.b as f64/ n
     }
     pub fn get(&mut self) -> f64 {
