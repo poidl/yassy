@@ -49,34 +49,28 @@ impl Oscillator for OscMulti {
         self.osc2.reset(f0 as f64);	
     }
     fn get_amp(&mut self) -> f32 {
-        let mut c1 = 0f32;
-        let mut c2 = 0f32;
-        if self.is_on[0] {
-            c1 = 1f32;
-        }
-        if self.is_on[1] {
-            c2 = 1f32;
-        }        
-        let fac = c1+c2;
-        let phi1 = self.osc1.get_amp();
-        let phi2 = self.osc2.get_amp();
-        println!("amp: {}",phi2);
-        (1f32/fac)*(c1*phi1+c2*phi2)
+        let amp = match self.currentosc {
+            1i8 => self.osc1.get_amp(),
+            2i8 => self.osc2.get_amp(),
+            _ => 0f32
+        };        
+        // println!("newamp: {}",newamp);
+        amp
     }
 }
 
 pub struct OscMulti {
     osc1: OscBasic,
     osc2: OscBLIT,
-    pub is_on: [bool; 2]
+    pub currentosc: i8
 }
 
 impl OscMulti {
     pub fn new() -> OscMulti {
         let o1 = OscBasic::new();
         let o2 = OscBLIT::new();
-        let on= [false, false];
-        OscMulti {osc1: o1, osc2: o2, is_on: on}
+        let oc= 2i8;
+        OscMulti {osc1: o1, osc2: o2, currentosc: oc}
     }
 }
 
