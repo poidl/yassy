@@ -135,7 +135,7 @@ impl OscBLIT {
                 
                 alpha: 0u32,
                 i: 0i32,
-                f: (*Box::into_raw(utils::blit_4t())).as_ptr(), // TODO: this must be cleaned up? See https://doc.rust-lang.org/std/primitive.pointer.html
+                f: (*Box::into_raw(utils::blit_2t())).as_ptr(), // TODO: this must be cleaned up? See https://doc.rust-lang.org/std/primitive.pointer.html
                 d: 0f64,
                 abs_a: 0i32
             }            
@@ -148,17 +148,18 @@ impl OscBLIT {
         self.fac_i = self.m as f64 *fs/c; // m*fs/c= m*fs/(4*n)
         self.fac_alpha = c/fs;
         self.fac_fn = 2f64*self.n as f64/self.fs;
-    }
+        //TODO check if this is *self.f.offset(0) is -1?
+        // unsafe{
+        //     println!("*self.f.offset(0): {}",*self.f.offset(0));
+        //     }
+        }
+        
     pub fn reset(&mut self, f0: f64) {
         self.b =  0;
         self.a =  self.b.wrapping_add(self.n as i32);
         self.f0=f0;
         self.fnn =  (f0*self.fac_fn) as u32; // 2*N*f0/fs
     }
-    // pub fn set_f0fn(&mut self, f0: f64) {
-    //     self.f0 = f0;
-    //     self.fnn =  (f0*self.fac_fn) as u32;
-    // }
     pub fn step_ab(&mut self){
         // wrapping_add: allows intentional overflow
         self.b = self.b.wrapping_add(self.fnn as i32);
@@ -167,35 +168,41 @@ impl OscBLIT {
         let mask = self.a >> 31u32;
         self.abs_a = self.a ^ mask; // xor with mask is equivalent to -1*(a+1) for a<0, and a no-op otherwise. http://stackoverflow.com/questions/12041632/how-to-compute-the-integer-absolute-value
     }
+    
+    // Compute alpha
     pub fn set_alpha_i(&mut self) {
         // TODO: alpha is just twice the phase increment fnn
         self.alpha =  (self.f0*self.fac_alpha) as u32; // self.alpha = 0..2N
-        let tmp = self.m as f64* (1f64 + self.a as f64 /(self.alpha as f64));
-        if self.abs_a < (self.alpha as i32) {
-            println!("APPLY A/alpha: {}", self.a as f64/self.alpha as f64); 
-            println!("segment index (0..2): {}", (tmp as f64)/(self.m as f64));
-        }
-        self.i = tmp.trunc() as i32;
+
     }
+    
+    // Compute and store segment value if |A| < alpha.
     pub fn step_c(&mut self) {
+        
         if self.abs_a < (self.alpha as i32) {
+
+            // Find the appropriate index i of the half segment. Imagining a horizontal "index" axis, the full segment is antisymmetric around index 0. We only stored the right half. Since |A| < alpha, |A|/alpha = 0..1. We map A/alpha linearly onto [0,M-1]. 
+            let i = (self.m as f64 -1f64)* self.abs_a as f64 /(self.alpha as f64);
+            // Convert to integer.
+            let i=i.trunc() as i32;
+
+            self.i = i;            
             unsafe {
-                // TODO: valgrind shows invalid reads in the following line:
-                self.c = -*self.f.offset(self.i as isize);
+                self.c = *self.f.offset(self.i as isize);
             }
-            // println!("apply {}", self.c);
         } else {
             self.c = 0f64;
         }
     }
     pub fn step_d(&mut self) {
         let n = self.n as f64;
-        // println!("self.b {}", self.b as f64/ n );
-        // println!("self.c {}", self.c);
-        // println!("self.i {}", self.i);
-        // println!(" ");
-        // self.c = 0f64;
-        self.d = self.c + self.b as f64/ n
+        if self.b>0i32 {
+            self.d = self.c + self.b as f64/ n;
+        } else {
+            self.d = -self.c + self.b as f64/ n;
+        }
+        
+        
     }
     pub fn get(&mut self) -> f64 {
         self.step_ab();

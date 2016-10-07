@@ -136,6 +136,20 @@ impl Cumsum for [f64] {
     }
 }
 
+// blit_2t returns the right half of the full segment
+pub fn blit_2t() -> Box<[f64]> {
+    const N: usize = 2*(2700-1)+1;
+    let mut t2 = vec![0f64;N];
+
+    let mut t4=blit_4t();
+    // We are using the right halft. Set the origin to -1 instead of 1.
+    t4[N-1]=-1f64;
+    for ii in 0..N {
+        t2[ii]=t4[N+ii-1];
+    }
+    t2.into_boxed_slice()
+}
+
 pub fn blit_4t() -> Box<[f64]> {
     // Bandlimited impulse segment for sawtooth with BLIT (bandlimited impulse train) approach. References:
     // Stilson, T. and Smith, J., 1996: Alias-free digital synthesis of classic analog waveforms. Proc. International Computer Music Conference
@@ -206,10 +220,11 @@ pub fn blit_4t() -> Box<[f64]> {
 
     // integrate and scale hk(0) (i.e. middle) to 1
     hk.cumsum(); let mut cs = hk;
-    let middle = cs[cs.len()/2+1];
+
+    let middle = cs[cs.len()/2];
     cs.mult(&(1f64/middle));
     // flip cs(t>0) around t axis
-    for ii in cs.len()/2+2 .. N {
+    for ii in cs.len()/2+1 .. N {
         cs[ii]=-2f64+cs[ii];
     }
     cs.into_boxed_slice()
