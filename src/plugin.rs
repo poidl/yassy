@@ -18,7 +18,7 @@ const NPARAMS: usize = 2;
 
 pub enum ParamName {
     Gain,
-    OscType
+    OscType,
 }
 
 pub trait HasFs {
@@ -69,7 +69,7 @@ impl SynthPlugin {
     }
     pub fn cleanup(&mut self) {
         self.synth.cleanup();
-    }    
+    }
 }
 
 pub fn toI8(paramval: f32) -> i8 {
@@ -84,4 +84,3 @@ pub fn toI8(paramval: f32) -> i8 {
 //     }
 //     return true
 // }
-

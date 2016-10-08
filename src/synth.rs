@@ -32,5 +32,5 @@ impl Synth {
     }
     pub fn cleanup(&mut self) {
         self.voice.cleanup();
-    }       
+    }
 }

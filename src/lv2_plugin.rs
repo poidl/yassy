@@ -93,7 +93,7 @@ impl Lv2SynthPlugin {
         self.plugin.get_amp()
     }
     fn map_params(&mut self, port: u32, data: *mut libc::c_void) {
-        
+
         let nparams = self.plugin.params.len();
         let iport = port - 2; //TODO: don't hardcode number of input/output ports
         if iport <= nparams as u32 - 1 {
@@ -106,5 +106,5 @@ impl Lv2SynthPlugin {
     }
     pub fn cleanup(&mut self) {
         self.plugin.cleanup();
-    }    
+    }
 }

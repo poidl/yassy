@@ -14,7 +14,7 @@ pub struct Voice {
     pub f0: f32,
     pub vel: f32,
     pub on: bool,
-    pub osc1: OscMulti
+    pub osc1: OscMulti,
 }
 
 impl IsVoice for Voice {
@@ -23,7 +23,7 @@ impl IsVoice for Voice {
             f0: 0f32,
             vel: 0f32,
             on: false,
-            osc1: OscMulti::new()
+            osc1: OscMulti::new(),
         }
     }
     fn set_fs(&mut self, fs: f64) {
@@ -31,7 +31,7 @@ impl IsVoice for Voice {
     }
     fn get_amp(&mut self) -> f32 {
         if self.on {
-            self.vel*self.osc1.get_amp()
+            self.vel * self.osc1.get_amp()
         } else {
             0.0
         }
@@ -42,7 +42,7 @@ impl IsVoice for Voice {
     }
     fn cleanup(&mut self) {
         self.osc1.cleanup();
-    }    
+    }
     // self.osc1.reset(&mut self) {
     //     self.osc1.set_f0 = self.f0;
     //     self.osc1.reset_phase();
