@@ -87,6 +87,8 @@ impl Descriptor {
     pub extern fn cleanup(instance: lv2::LV2Handle) {
 
         unsafe{
+            let synth = instance as *mut lv2_plugin::Lv2SynthPlugin;
+            (*synth).cleanup();
             //ptr::read(instance as *mut Amp); // no need for this?
             libc::free(instance  as lv2::LV2Handle)
         }

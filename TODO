@@ -1,7 +1,6 @@
 Oscillator:
 *) make blit_4t(), blit_2t() dependent of fs, use fs during initialization
 *) isn't alpha just twice the phase increment fnn
-*) clean up f: (*Box::into_raw(utils::blit_2t())).as_ptr()
 
 Other:
 *) there is a GSL dependency in utils

@@ -104,4 +104,7 @@ impl Lv2SynthPlugin {
             panic!("Not a valid PortIndex: {}", iport)
         }
     }
+    pub fn cleanup(&mut self) {
+        self.plugin.cleanup();
+    }    
 }

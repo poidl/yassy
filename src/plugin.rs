@@ -11,6 +11,7 @@ use synth;
 use midi;
 use midi::*;
 use synth::*;
+use oscillator::Oscillator;
 
 // Number of parameters
 const NPARAMS: usize = 2;
@@ -66,6 +67,9 @@ impl SynthPlugin {
             // self.synth.get_amp()
         }
     }
+    pub fn cleanup(&mut self) {
+        self.synth.cleanup();
+    }    
 }
 
 pub fn toI8(paramval: f32) -> i8 {

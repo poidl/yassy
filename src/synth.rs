@@ -30,4 +30,7 @@ impl Synth {
     pub fn get_amp(&mut self) -> f32 {
         self.voice.get_amp()
     }
+    pub fn cleanup(&mut self) {
+        self.voice.cleanup();
+    }       
 }

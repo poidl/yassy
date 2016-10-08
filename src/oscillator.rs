@@ -1,10 +1,11 @@
-
+use libc;
 use utils;
 
 pub trait Oscillator {
     fn set_fs(&mut self, f64);
     fn reset(&mut self, f32);
     fn get_amp(&mut self) -> f32;
+    fn cleanup(&mut self);
 }
 
 impl Oscillator for OscBasic {
@@ -25,6 +26,9 @@ impl Oscillator for OscBasic {
         let phi: f32 = (self.phase as f64/2147483648.0 -1f64) as f32;
         return phi
     }
+    fn cleanup(&mut self) {
+        
+    }
 }
 
 impl Oscillator for OscBLIT {
@@ -36,6 +40,11 @@ impl Oscillator for OscBLIT {
     }
     fn get_amp(&mut self) -> f32 {
         self.get() as f32
+    }
+    fn cleanup(&mut self) {
+        unsafe{
+            libc::free(self.f as *mut libc::c_void)
+        }
     }
 }
 
@@ -57,6 +66,9 @@ impl Oscillator for OscMulti {
         // println!("newamp: {}",newamp);
         amp
     }
+    fn cleanup(&mut self) {
+        self.osc2.cleanup();
+    }   
 }
 
 pub struct OscMulti {
@@ -97,7 +109,7 @@ impl OscBasic {
 }
 
 pub struct OscBLIT {
-    // We translate the fundamental frequency f0 from units 1/t to a fraction "fn" of a wavetable with 2N lattice points. fn corresponds to the number of points which are skipped when reading the wavetable,and can therefore be interpreted as a phase increment. The 2N lattice points represent the interval [-pi,pi). The max. resolved freq. is f0=fs/2, i.e. we want a linear function fn with fn(0)=0 and fn(fs/2)=N. It follows that fn(f0)=2N*f0/fs. If a signed integer of k bits is used as phase accumulator, the 2N interval translates to [-2^(k-1),2^(k-1)). Note that the interval is open on the left. For k=2, the values range from -2 to 1.
+    // We translate the fundamental frequency f0 from units 1/t to a fraction "fn" of a wavetable with 2N lattice points. fn corresponds to the number of points which are skipped when reading the wavetable,and can therefore be interpreted as a phase increment. The 2N lattice points represent the interval [-pi,pi). The max. resolved freq. is f0=fs/2, i.e. we want a linear function fn with fn(0)=0 and fn(fs/2)=N. It follows that fn(f0)=2N*f0/fs. If a signed integer of k bits is used as phase accumulator, the 2N interval translates to [-2^(k-1),2^(k-1)). Note that the interval is open on the right. For k=2, the values range from -2 to 1.
     pub n: u32,
     pub a: i32, // phase. Wavetable size is 2N. start at zero, wrap at N from 1 to -1
     pub fnn: u32, // phase increment
