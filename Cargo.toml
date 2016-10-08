@@ -17,9 +17,9 @@ lv2 = { path = "../lv2" }
 name = "yassy"
 crate-type = ["rlib","dylib"] # ?
 
-[dev-dependencies] # for testing/documentation
-gnuplot = "*"
-getopts = "=0.2.14" # gnuplot dependency
-plot = { path = "examples/plot" }
+#[dev-dependencies] # for testing/documentation
+#gnuplot = "*"
+#getopts = "=0.2.14" # gnuplot dependency
+#plot = { path = "examples/plot" }
 
 

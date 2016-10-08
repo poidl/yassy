@@ -29,6 +29,91 @@ impl Oscillator for OscBasic {
     fn cleanup(&mut self) {}
 }
 
+pub struct OscBasic {
+    fs: f64,
+    pub phase: u32,
+    pub dphase: u32,
+}
+
+impl OscBasic {
+    fn step(&mut self) {
+        self.phase = self.phase.wrapping_add(self.dphase);
+    }
+}
+
+impl OscBasic {
+    pub fn new() -> OscBasic {
+        OscBasic {
+            fs: 0f64,
+            phase: 0u32,
+            dphase: 0u32,
+        }
+    }
+}
+
+
+pub struct PhaseAccumulator {
+    // Half width of segment
+    n: u32, 
+    // sample rate
+    fs: f64, 
+    // fundamental frequency
+    f0: f64, 
+    // current index
+    pub i: i32, 
+    // index increment
+    di: u32,
+    // avoid runtime multiplication
+    fac_di: f64,
+}
+
+impl PhaseAccumulator {
+    pub fn new(n: u32) -> PhaseAccumulator {
+        PhaseAccumulator {
+            n: n,
+            fs: 0f64,
+            f0: 0f64, 
+            i: 0i32,
+            di: 0u32,
+            fac_di: 0f64, 
+        }
+    }
+}
+
+
+
+
+impl PhaseAccumulator {
+    pub fn set_fs(&mut self, fs: f64) {
+        self.fs = fs;
+        self.fac_di = 2f64 * self.n as f64 / fs;
+    }
+    pub fn reset(&mut self, f0: f64) {
+        // Set index increment of the phase accumulator. (f0/fs) is the fraction of the full segment (length 2N) per sample. Maximum resolvable non-aliased frequency is f0=fs/2, which must correspond to an index increment of N. So di=2*N*f0/fs
+        self.di = (f0 * self.fac_di as f64) as u32;
+        self.i = -(self.n as i32);
+    }
+    pub fn get_i(&mut self) -> i32 {
+        self.step();
+        self.i
+    }    
+    pub fn step(&mut self) {
+        self.i = self.i.wrapping_add(self.di as i32);
+    }
+    pub fn shift(&mut self) -> i32 {
+        self.i.wrapping_add(self.n as i32) 
+    }
+    pub fn normalize_index(&mut self) -> f64 {
+        self.i as f64 / self.n as f64
+    }   
+}
+
+
+
+
+////////////////////////////////////////////////////
+
+
 impl Oscillator for OscBLIT {
     fn set_fs(&mut self, fs: f64) {
         self.set_fs(fs);
@@ -86,28 +171,6 @@ impl OscMulti {
     }
 }
 
-pub struct OscBasic {
-    fs: f64,
-    pub phase: u32,
-    pub dphase: u32,
-}
-
-impl OscBasic {
-    fn step(&mut self) {
-        self.phase = self.phase.wrapping_add(self.dphase);
-    }
-}
-
-impl OscBasic {
-    pub fn new() -> OscBasic {
-        OscBasic {
-            fs: 0f64,
-            phase: 0u32,
-            dphase: 0u32,
-        }
-    }
-}
-
 pub struct OscBLIT {
     // We translate the fundamental frequency f0 from units 1/t to a fraction "fn" of a wavetable with 2N lattice points. fn corresponds to the number of points which are skipped when reading the wavetable,and can therefore be interpreted as a phase increment. The 2N lattice points represent the interval [-pi,pi). The max. resolved freq. is f0=fs/2, i.e. we want a linear function fn with fn(0)=0 and fn(fs/2)=N. It follows that fn(f0)=2N*f0/fs. If a signed integer of k bits is used as phase accumulator, the 2N interval translates to [-2^(k-1),2^(k-1)). Note that the interval is open on the right. For k=2, the values range from -2 to 1.
     pub n: u32,
@@ -129,12 +192,14 @@ pub struct OscBLIT {
 }
 
 const M: usize = 2 * (2700 - 1) + 1;
+// TODO: usize instead of u32?
+const N: u32 = 2147483648; // 2^31=2147483648; 
 
 impl OscBLIT {
     pub fn new() -> OscBLIT {
         unsafe {
             OscBLIT {
-                n: 2u32.pow(31), // follow notation of Frei (p. 3)
+                n: N, // follow notation of Frei (p. 3)
                 m: M as u32,
                 fs: 0f64, // sample rate
                 c: 0f64,
