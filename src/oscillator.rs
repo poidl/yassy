@@ -53,65 +53,61 @@ impl OscBasic {
 
 
 pub struct PhaseAccumulator {
-    // Half width of segment
-    n: u32, 
+    // Half width of segment, i.e. 2^(k-1) with k=32.
+    n: u32,
     // sample rate
-    fs: f64, 
-    // fundamental frequency
-    f0: f64, 
-    // current index
-    pub i: i32, 
+    fs: f64,
+    // current index. Note that the index cannot obtain n (since it is an i32), but ranges from [-2^(k-1),2^(k-1)-1]
+    pub a: i32,
     // index increment
-    di: u32,
+    da: i32,
     // avoid runtime multiplication
-    fac_di: f64,
+    fac_da: f64,
 }
 
 impl PhaseAccumulator {
-    pub fn new(n: u32) -> PhaseAccumulator {
+    pub fn new() -> PhaseAccumulator {
         PhaseAccumulator {
-            n: n,
+            n: 2147483648,
             fs: 0f64,
-            f0: 0f64, 
-            i: 0i32,
-            di: 0u32,
-            fac_di: 0f64, 
+            a: 0i32,
+            da: 0i32,
+            fac_da: 0f64,
         }
     }
 }
 
-
-
-
 impl PhaseAccumulator {
     pub fn set_fs(&mut self, fs: f64) {
         self.fs = fs;
-        self.fac_di = 2f64 * self.n as f64 / fs;
+        self.fac_da = 2f64 * self.n as f64 / fs;
     }
     pub fn reset(&mut self, f0: f64) {
-        // Set index increment of the phase accumulator. (f0/fs) is the fraction of the full segment (length 2N) per sample. Maximum resolvable non-aliased frequency is f0=fs/2, which must correspond to an index increment of N. So di=2*N*f0/fs
-        self.di = (f0 * self.fac_di as f64) as u32;
-        self.i = -(self.n as i32);
+        // Set index increment of the phase accumulator. (f0/fs) is the fraction of the full segment (length 2N) per sample. Maximum resolvable non-aliased frequency is f0=fs/2, which must correspond to an index increment of N. So da=2*N*f0/fs
+        self.da = (f0 * self.fac_da as f64) as i32;
+        // Set self.a to -2^(k-1). Could start at 0 instead, but this corresponds to what Frei uses. Note that (N as i32) is negative and equal to i32::min_value(). Is there a one-liner?
+        self.a = 0i32;
+        self.a = self.a.wrapping_add(N as i32);
     }
-    pub fn get_i(&mut self) -> i32 {
+    pub fn get_a(&mut self) -> i32 {
         self.step();
-        self.i
-    }    
-    pub fn step(&mut self) {
-        self.i = self.i.wrapping_add(self.di as i32);
+        self.a
     }
-    pub fn shift(&mut self) -> i32 {
-        self.i.wrapping_add(self.n as i32) 
+    pub fn step(&mut self) {
+        self.a = self.a.wrapping_add(self.da);
+    }
+    pub fn shiftn(&mut self) -> i32 {
+        self.a.wrapping_add(self.n as i32)
     }
     pub fn normalize_index(&mut self) -> f64 {
-        self.i as f64 / self.n as f64
-    }   
+        self.a as f64 / self.n as f64
+    }
 }
 
 
 
 
-////////////////////////////////////////////////////
+/// /////////////////////////////////////////////////
 
 
 impl Oscillator for OscBLIT {
@@ -172,13 +168,11 @@ impl OscMulti {
 }
 
 pub struct OscBLIT {
-    // We translate the fundamental frequency f0 from units 1/t to a fraction "fn" of a wavetable with 2N lattice points. fn corresponds to the number of points which are skipped when reading the wavetable,and can therefore be interpreted as a phase increment. The 2N lattice points represent the interval [-pi,pi). The max. resolved freq. is f0=fs/2, i.e. we want a linear function fn with fn(0)=0 and fn(fs/2)=N. It follows that fn(f0)=2N*f0/fs. If a signed integer of k bits is used as phase accumulator, the 2N interval translates to [-2^(k-1),2^(k-1)). Note that the interval is open on the right. For k=2, the values range from -2 to 1.
-    pub n: u32,
-    pub a: i32, // phase. Wavetable size is 2N. start at zero, wrap at N from 1 to -1
-    pub fnn: u32, // phase increment
+    // We translate the fundamental frequency f0 from units 1/t to a fraction "fn" of a wavetable with 2N lattice points. fn corresponds to the number of points which are skipped when reading the wavetable,and can therefore be interpreted as a phase increment. The 2N lattice points represent the interval [-pi,pi). The max. resolved freq. is f0=fs/2, i.e. we want a linear function fn with fn(0)=0 and fn(fs/2)=N. It follows that fn(f0)=2N*f0/fs. If a signed integer of k bits is used as phase accumulator, the 2N interval translates to [-2^(k-1),2^(k-1)-1]. I.e. for k=2, the values range from -2 to 1.
+    pub m: u32, // number of entries in half-segment of integratied bandlimited impulse
+    pub pa: PhaseAccumulator,
     pub b: i32, // a, phase shifted by N
     pub alpha: u32,
-    pub m: u32, // number of entries in half-segment of integratied bandlimited impulse
     pub i: i32,
     pub f: *mut f64,
     pub c: f64,
@@ -193,25 +187,21 @@ pub struct OscBLIT {
 
 const M: usize = 2 * (2700 - 1) + 1;
 // TODO: usize instead of u32?
-const N: u32 = 2147483648; // 2^31=2147483648; 
+const N: u32 = 2147483648; // 2^31=2147483648;
 
 impl OscBLIT {
     pub fn new() -> OscBLIT {
         unsafe {
             OscBLIT {
-                n: N, // follow notation of Frei (p. 3)
                 m: M as u32,
+                pa: PhaseAccumulator::new(),
                 fs: 0f64, // sample rate
                 c: 0f64,
                 fac_i: 0f64, // avoid unnecessary runtime multiplication
                 fac_alpha: 0f64,
                 fac_fn: 0f64,
-
-                a: 0i32, // phase. Wavetable size is 2N. start at -N, wrap at N from 1 to -1
                 b: 0i32, // a, phase shifted by N (start at 0)
                 f0: 0f64, // fundamental frequency
-                fnn: 0u32, // phase increment
-
                 alpha: 0u32,
                 i: 0i32,
                 f: (*Box::into_raw(vec![0f64; M].into_boxed_slice())).as_mut_ptr(), /* TODO: simpler? */
@@ -221,12 +211,13 @@ impl OscBLIT {
         }
     }
     pub fn set_fs(&mut self, fs: f64) {
+        self.pa.set_fs(fs);
         self.fs = fs;
         println!("************* fs: {}", fs);
-        let c = 4 as f64 * self.n as f64;
+        let c = 4 as f64 * self.pa.n as f64;
         self.fac_i = self.m as f64 * fs / c; // m*fs/c= m*fs/(4*n)
         self.fac_alpha = c / fs;
-        self.fac_fn = 2f64 * self.n as f64 / self.fs;
+        self.fac_fn = 2f64 * self.pa.n as f64 / self.fs;
 
         let halfsegment = utils::blit_2t(fs);
         unsafe {
@@ -237,18 +228,17 @@ impl OscBLIT {
     }
 
     pub fn reset(&mut self, f0: f64) {
-        self.b = 0;
-        self.a = self.b.wrapping_add(self.n as i32);
+        self.pa.reset(f0);
+        self.b = self.pa.shiftn();
         self.f0 = f0;
-        self.fnn = (f0 * self.fac_fn) as u32; // 2*N*f0/fs
     }
     pub fn step_ab(&mut self) {
-        // wrapping_add: allows intentional overflow
-        self.b = self.b.wrapping_add(self.fnn as i32);
-        self.a = self.b.wrapping_add(self.n as i32);
+        self.pa.step();
+        self.b = self.pa.shiftn();
         // a.abs() will panic/overflow if a=i32::min_value().
-        let mask = self.a >> 31u32;
-        self.abs_a = self.a ^ mask; // xor with mask is equivalent to -1*(a+1) for a<0, and a no-op otherwise. http://stackoverflow.com/questions/12041632/how-to-compute-the-integer-absolute-value
+        let a = self.pa.a;
+        let mask = a >> 31u32;
+        self.abs_a = a ^ mask; // xor with mask is equivalent to -1*(a+1) for a<0, and a no-op otherwise. http://stackoverflow.com/questions/12041632/how-to-compute-the-integer-absolute-value
     }
 
     // Compute alpha
@@ -277,7 +267,7 @@ impl OscBLIT {
         }
     }
     pub fn step_d(&mut self) {
-        let n = self.n as f64;
+        let n = self.pa.n as f64;
         if self.b > 0i32 {
             self.d = self.c + self.b as f64 / n;
         } else {
