@@ -1,67 +1,18 @@
 use libc;
 use utils;
 
-pub trait Oscillator {
-    fn set_fs(&mut self, f64);
-    fn reset(&mut self, f32);
-    fn get_amp(&mut self) -> f32;
-    fn cleanup(&mut self);
-}
-
-impl Oscillator for OscBasic {
-    fn set_fs(&mut self, fs: f64) {
-        self.fs = fs;
-    }
-    fn reset(&mut self, f0: f32) {
-        // Phase increment of the phase accumulator. (f0/fs) is the
-        // fraction of period per sample. This is multiplied by 2^32, so
-        // each frequency is equivalent to a fraction of the "maximum
-        // phase increment" 2^32, which corresponds to  f0 = fs.
-        // (2^32)/16=268435456
-        self.dphase = ((f0 / self.fs as f32) * 4294967296.0) as u32;
-        self.phase = 0
-    }
-    fn get_amp(&mut self) -> f32 {
-        self.step();
-        let phi: f32 = (self.phase as f64 / 2147483648.0 - 1f64) as f32;
-        return phi;
-    }
-    fn cleanup(&mut self) {}
-}
-
-pub struct OscBasic {
-    fs: f64,
-    pub phase: u32,
-    pub dphase: u32,
-}
-
-impl OscBasic {
-    fn step(&mut self) {
-        self.phase = self.phase.wrapping_add(self.dphase);
-    }
-}
-
-impl OscBasic {
-    pub fn new() -> OscBasic {
-        OscBasic {
-            fs: 0f64,
-            phase: 0u32,
-            dphase: 0u32,
-        }
-    }
-}
-
+const N: u32 = 2147483648; // 2^31=2147483648;
 
 pub struct PhaseAccumulator {
     // Half width of segment, i.e. 2^(k-1) with k=32.
     n: u32,
     // sample rate
     fs: f64,
-    // current index. Note that the index cannot obtain n (since it is an i32), but ranges from [-2^(k-1),2^(k-1)-1]
+    // current index. Note that the index cannot obtain the value n (since it is an i32), but instead ranges between [-2^(k-1),2^(k-1)-1]
     pub a: i32,
     // index increment
     da: i32,
-    // avoid runtime multiplication
+    // avoid unnecessary runtime multiplication
     fac_da: f64,
 }
 
@@ -75,9 +26,6 @@ impl PhaseAccumulator {
             fac_da: 0f64,
         }
     }
-}
-
-impl PhaseAccumulator {
     pub fn set_fs(&mut self, fs: f64) {
         self.fs = fs;
         self.fac_da = 2f64 * self.n as f64 / fs;
@@ -104,24 +52,63 @@ impl PhaseAccumulator {
     }
 }
 
+// **********************************************************
 
+pub trait Oscillator {
+    fn set_fs(&mut self, f64);
+    fn reset(&mut self, f32);
+    fn get_amp(&mut self) -> f32;
+    fn cleanup(&mut self);
+}
 
+// **********************************************************
 
-/// /////////////////////////////////////////////////
+pub struct OscBasic {
+    pa: PhaseAccumulator,
+}
 
+impl OscBasic {
+    pub fn new() -> OscBasic {
+        OscBasic { pa: PhaseAccumulator::new() }
+    }
+}
 
-impl Oscillator for OscBLIT {
+/// Make an Oscillator from a PhaseAccumulator by adding get_amp()
+/// and cleanup(). Non-bandlimited, for testing only.
+
+impl Oscillator for OscBasic {
     fn set_fs(&mut self, fs: f64) {
-        self.set_fs(fs);
+        self.pa.set_fs(fs)
     }
     fn reset(&mut self, f0: f32) {
-        self.reset(f0 as f64);
+        self.pa.reset(f0 as f64)
     }
     fn get_amp(&mut self) -> f32 {
-        self.get() as f32
+        self.pa.step();
+        let phi: f32 = (self.pa.a as f64 / self.pa.n as f64) as f32;
+        return phi;
     }
-    fn cleanup(&mut self) {
-        unsafe { libc::free(self.f as *mut libc::c_void) }
+    fn cleanup(&mut self) {}
+}
+
+// ***********************************************************
+
+pub struct OscMulti {
+    osc1: OscBasic,
+    osc2: OscBLIT,
+    pub currentosc: i8,
+}
+
+impl OscMulti {
+    pub fn new() -> OscMulti {
+        let o1 = OscBasic::new();
+        let o2 = OscBLIT::new();
+        let oc = 2i8;
+        OscMulti {
+            osc1: o1,
+            osc2: o2,
+            currentosc: oc,
+        }
     }
 }
 
@@ -148,30 +135,16 @@ impl Oscillator for OscMulti {
     }
 }
 
-pub struct OscMulti {
-    osc1: OscBasic,
-    osc2: OscBLIT,
-    pub currentosc: i8,
-}
 
-impl OscMulti {
-    pub fn new() -> OscMulti {
-        let o1 = OscBasic::new();
-        let o2 = OscBLIT::new();
-        let oc = 2i8;
-        OscMulti {
-            osc1: o1,
-            osc2: o2,
-            currentosc: oc,
-        }
-    }
-}
+// ****************************************************
+
+const M: usize = 2 * (2700 - 1) + 1;
 
 pub struct OscBLIT {
     // We translate the fundamental frequency f0 from units 1/t to a fraction "fn" of a wavetable with 2N lattice points. fn corresponds to the number of points which are skipped when reading the wavetable,and can therefore be interpreted as a phase increment. The 2N lattice points represent the interval [-pi,pi). The max. resolved freq. is f0=fs/2, i.e. we want a linear function fn with fn(0)=0 and fn(fs/2)=N. It follows that fn(f0)=2N*f0/fs. If a signed integer of k bits is used as phase accumulator, the 2N interval translates to [-2^(k-1),2^(k-1)-1]. I.e. for k=2, the values range from -2 to 1.
     pub m: u32, // number of entries in half-segment of integratied bandlimited impulse
     pub pa: PhaseAccumulator,
-    pub b: i32, // a, phase shifted by N
+    pub b: i32, // amplitude of phase accumulator, phase shifted by N
     pub alpha: u32,
     pub i: i32,
     pub f: *mut f64,
@@ -184,10 +157,6 @@ pub struct OscBLIT {
     pub fac_fn: f64,
     pub abs_a: i32,
 }
-
-const M: usize = 2 * (2700 - 1) + 1;
-// TODO: usize instead of u32?
-const N: u32 = 2147483648; // 2^31=2147483648;
 
 impl OscBLIT {
     pub fn new() -> OscBLIT {
@@ -282,5 +251,20 @@ impl OscBLIT {
         self.step_c();
         self.step_d();
         self.d as f64
+    }
+}
+
+impl Oscillator for OscBLIT {
+    fn set_fs(&mut self, fs: f64) {
+        self.set_fs(fs);
+    }
+    fn reset(&mut self, f0: f32) {
+        self.reset(f0 as f64);
+    }
+    fn get_amp(&mut self) -> f32 {
+        self.get() as f32
+    }
+    fn cleanup(&mut self) {
+        unsafe { libc::free(self.f as *mut libc::c_void) }
     }
 }
