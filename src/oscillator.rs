@@ -1,4 +1,3 @@
-use libc;
 use utils;
 
 const N: u32 = 2147483648; // 2^31=2147483648;
@@ -147,7 +146,6 @@ pub struct OscBLIT {
     pub b: i32, // amplitude of phase accumulator, phase shifted by N
     pub alpha: u32,
     pub i: i32,
-    pub f: *mut f64,
     pub c: f64,
     pub d: f64,
     pub fs: f64, // sample rate
@@ -156,27 +154,26 @@ pub struct OscBLIT {
     pub fac_alpha: f64,
     pub fac_fn: f64,
     pub abs_a: i32,
+    pub blit_segment: [f64; M],
 }
 
 impl OscBLIT {
     pub fn new() -> OscBLIT {
-        unsafe {
-            OscBLIT {
-                m: M as u32,
-                pa: PhaseAccumulator::new(),
-                fs: 0f64, // sample rate
-                c: 0f64,
-                fac_i: 0f64, // avoid unnecessary runtime multiplication
-                fac_alpha: 0f64,
-                fac_fn: 0f64,
-                b: 0i32, // a, phase shifted by N (start at 0)
-                f0: 0f64, // fundamental frequency
-                alpha: 0u32,
-                i: 0i32,
-                f: (*Box::into_raw(vec![0f64; M].into_boxed_slice())).as_mut_ptr(), /* TODO: simpler? */
-                d: 0f64,
-                abs_a: 0i32,
-            }
+        OscBLIT {
+            m: M as u32,
+            pa: PhaseAccumulator::new(),
+            fs: 0f64, // sample rate
+            c: 0f64,
+            fac_i: 0f64, // avoid unnecessary runtime multiplication
+            fac_alpha: 0f64,
+            fac_fn: 0f64,
+            b: 0i32, // a, phase shifted by N (start at 0)
+            f0: 0f64, // fundamental frequency
+            alpha: 0u32,
+            i: 0i32,
+            d: 0f64,
+            abs_a: 0i32,
+            blit_segment: [0f64; M],
         }
     }
     pub fn set_fs(&mut self, fs: f64) {
@@ -188,12 +185,8 @@ impl OscBLIT {
         self.fac_alpha = c / fs;
         self.fac_fn = 2f64 * self.pa.n as f64 / self.fs;
 
-        let halfsegment = utils::blit_2t(fs);
-        unsafe {
-            for ii in 0..M {
-                *self.f.offset(ii as isize) = halfsegment[ii];
-            }
-        }
+        self.blit_segment = utils::blit_2t(fs);
+
     }
 
     pub fn reset(&mut self, f0: f64) {
@@ -228,9 +221,7 @@ impl OscBLIT {
             let i = i.trunc() as i32;
 
             self.i = i;
-            unsafe {
-                self.c = *self.f.offset(self.i as isize);
-            }
+            self.c = self.blit_segment[self.i as usize];
         } else {
             self.c = 0f64;
         }
@@ -264,7 +255,5 @@ impl Oscillator for OscBLIT {
     fn get_amp(&mut self) -> f32 {
         self.get() as f32
     }
-    fn cleanup(&mut self) {
-        unsafe { libc::free(self.f as *mut libc::c_void) }
-    }
+    fn cleanup(&mut self) {}
 }
