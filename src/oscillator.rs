@@ -122,8 +122,14 @@ impl Oscillator for OscMulti {
     }
     fn get_amp(&mut self) -> f32 {
         let amp = match self.currentosc {
-            1i8 => self.osc1.get_amp(),
-            2i8 => self.osc2.get_amp(),
+            1i8 => {
+                self.osc2.use_postfilter = false;
+                self.osc2.get_amp()
+            }
+            2i8 => {
+                self.osc2.use_postfilter = true;
+                self.osc2.get_amp()
+            }
             _ => 0f32,
         };
         // println!("newamp: {}",newamp);
@@ -155,7 +161,19 @@ pub struct OscBLIT {
     pub fac_fn: f64,
     pub abs_a: i32,
     pub blit_segment: [f64; M],
+    pub use_blit: bool,
+    pub use_postfilter: bool,
+    pub pf_b0: f64,
+    pub pf_a1: f64,
+    pub d_old: f64,
 }
+
+// Postfilter (Frei p. 17)
+// H( z ) = 1/(0.65 + 0.35*z^(-1)) = 1.538462/(1+0.538462*z^(-1)) :=
+// := b0/(1+a1*z^(-1))
+// b0=1.538462, a1=0.538462
+// y(n) = b0*x(n)-a1*y(n-1) = b0*x(n)-a1*d_old
+
 
 impl OscBLIT {
     pub fn new() -> OscBLIT {
@@ -174,6 +192,11 @@ impl OscBLIT {
             d: 0f64,
             abs_a: 0i32,
             blit_segment: [0f64; M],
+            use_blit: true,
+            use_postfilter: true,
+            pf_b0: 1.538462f64,
+            pf_a1: 0.538462f64,
+            d_old: 0f64,
         }
     }
     pub fn set_fs(&mut self, fs: f64) {
@@ -228,14 +251,22 @@ impl OscBLIT {
     }
     pub fn step_d(&mut self) {
         let n = self.pa.n as f64;
-        if self.b > 0i32 {
-            self.d = self.c + self.b as f64 / n;
-        } else {
-            self.d = -self.c + self.b as f64 / n;
+        self.d = self.b as f64 / n;
+        if self.use_blit {
+            if self.b > 0i32 {
+                self.d += self.c;
+            } else {
+                self.d -= self.c;
+            }
         }
-
+        // y(n) = b0 * x(n) - a1 * d_old
+        if self.use_postfilter {
+            self.d = self.pf_b0 * self.d - self.pf_a1 * self.d_old;
+        }
+        self.d_old = self.d;
 
     }
+
     pub fn get(&mut self) -> f64 {
         self.step_ab();
         self.set_alpha_i();
