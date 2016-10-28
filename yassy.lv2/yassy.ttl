@@ -42,11 +42,21 @@
 	  a lv2:InputPort ,
                   lv2:ControlPort ;
           lv2:index 3 ;
-          lv2:symbol "osc" ;
-          lv2:name "Oscillator" ;
-          lv2:default 2.0 ;
-          lv2:minimum 1.0 ;
-          lv2:maximum 2.0 ;
-          lv2:portProperty lv2:integer                 
+          lv2:symbol "blit" ;
+          lv2:name "BLIT" ;
+          lv2:default 1.0 ;
+          lv2:minimum 0.0 ;
+          lv2:maximum 1.0 ;
+          lv2:portProperty lv2:integer
+	] , [
+	  a lv2:InputPort ,
+                  lv2:ControlPort ;
+          lv2:index 4 ;
+          lv2:symbol "postfilter" ;
+          lv2:name "Postfilter" ;
+          lv2:default 1.0 ;
+          lv2:minimum 0.0 ;
+          lv2:maximum 1.0 ;
+          lv2:portProperty lv2:integer                         
   ] .
         

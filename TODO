@@ -1,3 +1,7 @@
+
+BUGS:
+*) something's wrong with the postfilter
+
 BLIT:
 *) isn't alpha just twice the phase increment fnn
 *) strange things happen at very high frequencies (F9 and higher?)

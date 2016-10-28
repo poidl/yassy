@@ -90,57 +90,6 @@ impl Oscillator for OscBasic {
     fn cleanup(&mut self) {}
 }
 
-// ***********************************************************
-
-pub struct OscMulti {
-    osc1: OscBasic,
-    osc2: OscBLIT,
-    pub currentosc: i8,
-}
-
-impl OscMulti {
-    pub fn new() -> OscMulti {
-        let o1 = OscBasic::new();
-        let o2 = OscBLIT::new();
-        let oc = 2i8;
-        OscMulti {
-            osc1: o1,
-            osc2: o2,
-            currentosc: oc,
-        }
-    }
-}
-
-impl Oscillator for OscMulti {
-    fn set_fs(&mut self, fs: f64) {
-        self.osc1.set_fs(fs);
-        self.osc2.set_fs(fs);
-    }
-    fn reset(&mut self, f0: f32) {
-        self.osc1.reset(f0);
-        self.osc2.reset(f0 as f64);
-    }
-    fn get_amp(&mut self) -> f32 {
-        let amp = match self.currentosc {
-            1i8 => {
-                self.osc2.use_postfilter = false;
-                self.osc2.get_amp()
-            }
-            2i8 => {
-                self.osc2.use_postfilter = true;
-                self.osc2.get_amp()
-            }
-            _ => 0f32,
-        };
-        // println!("newamp: {}",newamp);
-        amp
-    }
-    fn cleanup(&mut self) {
-        self.osc2.cleanup();
-    }
-}
-
-
 // ****************************************************
 
 const M: usize = 2 * (2700 - 1) + 1;
@@ -196,7 +145,7 @@ impl OscBLIT {
             use_postfilter: true,
             pf_b0: 1.538462f64,
             pf_a1: 0.538462f64,
-            d_old: 0f64,
+            d_old: -9999f64,
         }
     }
     pub fn set_fs(&mut self, fs: f64) {
@@ -261,9 +210,14 @@ impl OscBLIT {
         }
         // y(n) = b0 * x(n) - a1 * d_old
         if self.use_postfilter {
+            if self.d_old == -9999f64 {
+                // TODO: what's this?
+                self.d_old = 0f64
+            }
+            // TODO: something's wrong with this filter
             self.d = self.pf_b0 * self.d - self.pf_a1 * self.d_old;
+            self.d_old = self.d;
         }
-        self.d_old = self.d;
 
     }
 
@@ -288,3 +242,53 @@ impl Oscillator for OscBLIT {
     }
     fn cleanup(&mut self) {}
 }
+
+// ***********************************************************
+
+// pub struct OscMulti {
+//     osc1: OscBasic,
+//     osc2: OscBLIT,
+//     pub currentosc: i8,
+// }
+
+// impl OscMulti {
+//     pub fn new() -> OscMulti {
+//         let o1 = OscBasic::new();
+//         let o2 = OscBLIT::new();
+//         let oc = 2i8;
+//         OscMulti {
+//             osc1: o1,
+//             osc2: o2,
+//             currentosc: oc,
+//         }
+//     }
+// }
+
+// impl Oscillator for OscMulti {
+//     fn set_fs(&mut self, fs: f64) {
+//         self.osc1.set_fs(fs);
+//         self.osc2.set_fs(fs);
+//     }
+//     fn reset(&mut self, f0: f32) {
+//         self.osc1.reset(f0);
+//         self.osc2.reset(f0 as f64);
+//     }
+//     fn get_amp(&mut self) -> f32 {
+//         let amp = match self.currentosc {
+//             1i8 => {
+//                 self.osc2.use_postfilter = false;
+//                 self.osc2.get_amp()
+//             }
+//             2i8 => {
+//                 self.osc2.use_postfilter = true;
+//                 self.osc2.get_amp()
+//             }
+//             _ => 0f32,
+//         };
+//         // println!("newamp: {}",newamp);
+//         amp
+//     }
+//     fn cleanup(&mut self) {
+//         self.osc2.cleanup();
+//     }
+// }

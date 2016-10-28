@@ -14,11 +14,12 @@ use synth::*;
 use oscillator::Oscillator;
 
 // Number of parameters
-const NPARAMS: usize = 2;
+const NPARAMS: usize = 3;
 
 pub enum ParamName {
     Gain,
-    OscType,
+    BLIT,
+    Postfilter,
 }
 
 pub trait HasFs {
@@ -41,7 +42,7 @@ impl SynthPlugin {
             audio_out: &mut 0f32,
             synth: synth::Synth::new(),
             fs: 0f64,
-            params: [&mut 0.5f32, &mut 1f32],
+            params: [&mut 0.5f32, &mut 1f32, &mut 1f32],
         };
         if synth.params.len() != NPARAMS {
             panic!("Wrong number of parameters")
@@ -60,9 +61,11 @@ impl SynthPlugin {
     pub fn get_amp(&mut self) -> f32 {
         unsafe {
             let g = *(self.params[ParamName::Gain as usize]);
-            let p1 = *(self.params[ParamName::OscType as usize]);
-            self.synth.voice.osc1.currentosc = toI8(p1);
-            // println!("g: {}", g);
+            let p1 = *(self.params[ParamName::BLIT as usize]);
+            let p2 = *(self.params[ParamName::Postfilter as usize]);
+            self.synth.voice.osc1.use_blit = toBool(p1);
+            self.synth.voice.osc1.use_postfilter = toBool(p2);
+            // println!("USE BLIT: {}", self.synth.voice.osc1.use_blit);
             g * self.synth.get_amp()
             // self.synth.get_amp()
         }
@@ -77,10 +80,10 @@ pub fn toI8(paramval: f32) -> i8 {
     paramval.round() as i8
 }
 
-// pub fn toBool(paramval: f32) -> bool {
-//     // let half = 127f32/2f32;
-//     if paramval < 0.5f32 {
-//         return false
-//     }
-//     return true
-// }
+pub fn toBool(paramval: f32) -> bool {
+    // let half = 127f32/2f32;
+    if paramval < 0.5f32 {
+        return false;
+    }
+    return true;
+}
