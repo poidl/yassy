@@ -145,6 +145,7 @@ impl OscBLIT {
             use_postfilter: true,
             pf_b0: 1.538462f64,
             pf_a1: 0.538462f64,
+            // pf_a1: 0.2,
             d_old: -9999f64,
         }
     }
@@ -215,7 +216,7 @@ impl OscBLIT {
                 self.d_old = 0f64
             }
             // TODO: something's wrong with this filter
-            self.d = self.pf_b0 * self.d - self.pf_a1 * self.d_old;
+            self.d = ((1f64 + self.pf_a1) * self.d - self.pf_a1 * self.d_old) * 0.70;
             self.d_old = self.d;
         }
 
