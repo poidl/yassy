@@ -66,7 +66,7 @@ impl SynthPlugin {
             self.synth.voice.osc1.use_blit = toBool(p1);
             self.synth.voice.osc1.use_postfilter = toBool(p2);
             // println!("USE BLIT: {}", self.synth.voice.osc1.use_blit);
-            g * self.synth.get_amp()
+            (10f32).powf(g / 20f32) * self.synth.get_amp()
             // self.synth.get_amp()
         }
     }
