@@ -145,8 +145,7 @@ impl OscBLIT {
             use_postfilter: true,
             pf_b0: 1.538462f64,
             pf_a1: 0.538462f64,
-            // pf_a1: 0.2,
-            d_old: -9999f64,
+            d_old: 0f64,
         }
     }
     pub fn set_fs(&mut self, fs: f64) {
@@ -211,12 +210,7 @@ impl OscBLIT {
         }
         // y(n) = b0 * x(n) - a1 * d_old
         if self.use_postfilter {
-            if self.d_old == -9999f64 {
-                // TODO: what's this?
-                self.d_old = 0f64
-            }
-            // TODO: something's wrong with this filter
-            self.d = ((1f64 + self.pf_a1) * self.d - self.pf_a1 * self.d_old) * 0.70;
+            self.d = self.pf_b0 * self.d - self.pf_a1 * self.d_old;
             self.d_old = self.d;
         }
 
