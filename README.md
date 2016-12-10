@@ -2,16 +2,23 @@
 
 A beginner's programming exercise in Rust.
 
-Currently working on basic midi note message processing and a simple oscillator.
+
 Implemented basic bandlimited sawtooth oscillator as described in:
 
 Frei, B.: Digital sound generation. Institute for Computer Music and Sound Technology (ICST) Zurich University of the Arts.
 
-The code in the /example directory reproduces e.g. Fig. 8 of the book.
+Now trying to understand what the postfilter is good for (I can't hear its effect)
 
-### ./ui/
-browser based ui for yassy using websocket
 
-### ./midi/
-Minimal midi message processing in Rust
+### Directory structure
+* ui: browser based ui for yassy using websocket
+* midi: midi note processing
+* mygsl: a couple of bindings to the GSL library
+
+### Objectives of this project:
+* learn Rust (low-level programming in general)
+* learn something about DSP
+
+### TODO
+* ADSR envelope
 
