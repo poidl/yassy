@@ -6,5 +6,10 @@ BLIT:
 *) isn't alpha just twice the phase increment fnn
 *) strange things happen at very high frequencies (F9 and higher?)
 
+DOCUMENTATION:
+*) Insert the following, but note copyright
+%https://github.com/poidl/yassy/blob/2b6f974c33e525abc3e9d08fe0a439fb1c91d261/doc/index.html
+%https://github.com/poidl/yassy/blob/2b6f974c33e525abc3e9d08fe0a439fb1c91d261/doc/filters.html
+
 Other:
 *) there is a GSL dependency in utils

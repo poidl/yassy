@@ -35,7 +35,6 @@ pub struct Lv2SynthPlugin {
 
 impl Lv2SynthPlugin {
     pub fn new() -> Lv2SynthPlugin {
-        // let np = ptr::null();
         let mut lv2plugin = Lv2SynthPlugin {
             map: ptr::null_mut(),
             in_port: ptr::null(),
