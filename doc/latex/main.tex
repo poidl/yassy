@@ -33,7 +33,7 @@
 
 \renewcommand{\familydefault}{\sfdefault}
 
-\graphicspath{{figures/}} 
+\graphicspath{{../figures/}} 
 
 \title{Documentation}
 
@@ -49,10 +49,11 @@
 %https://github.com/poidl/yassy/blob/2b6f974c33e525abc3e9d08fe0a439fb1c91d261/doc/index.html
 %https://github.com/poidl/yassy/blob/2b6f974c33e525abc3e9d08fe0a439fb1c91d261/doc/filters.html
 
-{\bf Note:} I'm a DSP beginner. The following may contain serious errors and may be strongly misleading.
+{\bf Note:} I'm a DSP beginner. The following may contain serious errors and/or be severely misleading.
 
 \section{Postfilter for BLIT sawtooth VA synth}\label{sec:dsp}
 
+TEst \[\frac{1}{0.65+0.35z^{-1}}\]
  I'm trying to understand the postfilter for the bandlimited sawtooth VA synth described by 
 \cite[][his page 17]{frei2002digital}, defined by
 
@@ -94,17 +95,25 @@ showing that $H(z)$ has a zero at $z=0$ and a pole at $z=-a'_1$. Setting $z=x+iy
 
 \begin{align}
 Re(H(z)) &= b'_0\frac{x^2+y^2-a'_1x}{x^2+y^2-2a'_1x+a_1^{'2}}\\
-Im(H(z)) &= -\left(\frac{b'_0}{a'_1}\right)\frac{y}{x^2+y^2-2a'_1x+a_1^{'2}},
+Im(H(z)) &= -\left(\frac{b'_0}{a'_1}\right)\frac{y}{x^2+y^2-2a'_1x+a_1^{'2}}.
 \end{align}
-
-which is shown in Fig. \ref{fig:h}
 
 The specific filter \eqref{eq:freifilter} is obtained by setting
 
 \begin{align}
 b'_0=1.54 \\
-a'_1=0.54.
+a'_1=0.54,
 \end{align}
+
+and $Re(H(z))$ is shown in Fig. \ref{fig:h}
+
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=0.8\textwidth]{h.pdf}
+	\caption{$Re(H(z))$ for $a'_1=0.54$ and $b'_0=1.54$. The unit circle is shown in black.}\label{fig:h}
+\end{figure}
+
+
 
 
 

@@ -1,7 +1,8 @@
 target
 Cargo.lock
 node_modules
-doc
 .vscode
 vgcore*
 nobackup
+htl_tmp_builddir
+*.pdf

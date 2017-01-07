@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<script type="text/javascript">
+        window.onscroll=function(){
+            if (window.scrollY > 300 ) {
+                document.getElementById('back-to-top').style.display="inline-block";
+            } else {
+                document.getElementById('back-to-top').style.display="none";
+            }
+        }
+    </script><div style="position: fixed; bottom: 25px; width=100%; max-width: 800px; margin:auto; text-align: right; left:0; right: 0;  padding-right: 1em;">
+<a class="back-to-top" href="#mycontents" id="back-to-top">Table of contents</a>
+</div><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1 plus MathML 2.0//EN" 
+"http://www.w3.org/Math/DTD/mathml2/xhtml-math11-f.dtd" >
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head><title>""</title>
+<meta content="text/html; charset=utf-8" http-equiv="Content-Type"/>
+<meta content="TeX4ht (http://www.tug.org/tex4ht/)" name="generator"/>
+<meta content="TeX4ht (http://www.tug.org/tex4ht/)" name="originator"/>
+<!-- xhtml,charset=utf-8,mathml,html -->
+<meta content="main.tex" name="src"/>
+<link href="main.css" rel="stylesheet" type="text/css"/>
+<meta content="width=device-width, initial-scale=1" name="viewport"/></head><div style="overflow-x: scroll;"><body style="font-size: 100%; width=100%; max-width: 800px; padding: 1em; margin: auto;">
+<div class="maketitle">
+<h2 class="titleHead">""<br/><h3>""</h3></h2>
+<div class="author"><span class="cmss-12x-x-120">Stefan</span></div><br/>
+<div class="date"><span class="cmss-12x-x-120">January 7, 2017</span></div>
+</div>
+<!--l. 51--><p class="noindent"><span class="cmssbx-10x-x-120">Note: </span>I’m a DSP beginner. The following may contain serious errors and/or be severely misleading.
+<a id="x1-2r1"></a>
+</p>
+<ol><a id="mycontents"></a><li><a href="#x1-10001">Postﬁlter for BLIT sawtooth VA synth</a></li><li><a href="#x1-20001">References</a></li></ol><h3 class="sectionHead"><span class="titlemark">1   </span> <a id="x1-10001"></a>Postﬁlter for BLIT sawtooth VA synth</h3>
+<!--l. 55--><p class="noindent">TEst
+</p>
+<div class="math-display"><!--l. 55--><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><mrow>
+<mfrac><mrow><mn>1</mn></mrow>
+<mrow><mn>0</mn><mo class="MathClass-punc">.</mo><mn>6</mn><mn>5</mn> <mo class="MathClass-bin">+</mo> <mn>0</mn><mo class="MathClass-punc">.</mo><mn>3</mn><mn>5</mn><msup><mrow><mi>z</mi></mrow><mrow><mo class="MathClass-bin">−</mo><mn>1</mn></mrow></msup></mrow></mfrac>
+</mrow></math></div>
+<!--l. 55--><p class="nopar"> I’m trying to understand the postﬁlter for the bandlimited sawtooth VA synth described by (<a href="#Xfrei2002digital">Frei</a>, <a href="#Xfrei2002digital">2002</a>, his
+page 17), deﬁned by
+</p>
+<table class="equation"><tr><td> <a id="x1-1001r1"></a>
+<!--l. 59--><math class="equation" display="block" xmlns="http://www.w3.org/1998/Math/MathML">
+<mfrac><mrow><mn>1</mn></mrow>
+<mrow><mn>0</mn><mo class="MathClass-punc">.</mo><mn>6</mn><mn>5</mn> <mo class="MathClass-bin">+</mo> <mn>0</mn><mo class="MathClass-punc">.</mo><mn>3</mn><mn>5</mn><msup><mrow><mi>z</mi></mrow><mrow><mo class="MathClass-bin">−</mo><mn>1</mn></mrow></msup></mrow></mfrac><mo class="MathClass-punc">.</mo>
+</math></td><td class="eq-no">(1)</td></tr></table>
+<!--l. 63--><p class="noindent">This is an inﬁnite impulse response (IIR) ﬁlter with a single-pole. These ﬁlters are generally of the form
+(<a href="#Xwiki:IIR">Wikipedia</a>, <a href="#Xwiki:IIR">2016</a>)
+</p>
+<table class="equation"><tr><td> <a id="x1-1002r2"></a>
+<!--l. 65--><math class="equation" display="block" xmlns="http://www.w3.org/1998/Math/MathML">
+<mi>y</mi><mrow><mo class="MathClass-open">[</mo><mrow><mi>n</mi></mrow><mo class="MathClass-close">]</mo></mrow> <mo class="MathClass-rel">=</mo> <mfrac><mrow><mn>1</mn></mrow>
+<mrow><msub><mrow><mi>a</mi></mrow><mrow><mn>0</mn></mrow></msub></mrow></mfrac><mrow><mo class="MathClass-open">(</mo><mrow><msub><mrow><mi>b</mi></mrow><mrow><mn>0</mn></mrow></msub><mi>x</mi><mrow><mo class="MathClass-open">[</mo><mrow><mi>n</mi></mrow><mo class="MathClass-close">]</mo></mrow> <mo class="MathClass-bin">−</mo> <msub><mrow><mi>a</mi></mrow><mrow><mn>1</mn></mrow></msub><mi>y</mi><mrow><mo class="MathClass-open">[</mo><mrow><mi>n</mi> <mo class="MathClass-bin">−</mo> <mn>1</mn></mrow><mo class="MathClass-close">]</mo></mrow></mrow><mo class="MathClass-close">)</mo></mrow><mo class="MathClass-punc">.</mo>
+</math></td><td class="eq-no">(2)</td></tr></table>
+<!--l. 69--><p class="noindent">and have a transfer function deﬁned by
+</p>
+<table class="equation"><tr><td> <a id="x1-1003r3"></a>
+<!--l. 71--><math class="equation" display="block" xmlns="http://www.w3.org/1998/Math/MathML">
+<mi>H</mi><mrow><mo class="MathClass-open">(</mo><mrow><mi>z</mi></mrow><mo class="MathClass-close">)</mo></mrow> <mo class="MathClass-rel">=</mo> <mfrac><mrow><msub><mrow><mi>b</mi></mrow><mrow><mn>0</mn></mrow></msub></mrow>
+<mrow><msub><mrow><mi>a</mi></mrow><mrow><mn>0</mn></mrow></msub> <mo class="MathClass-bin">+</mo> <msub><mrow><mi>a</mi></mrow><mrow><mn>1</mn></mrow></msub><msup><mrow><mi>z</mi></mrow><mrow><mo class="MathClass-bin">−</mo><mn>1</mn></mrow></msup></mrow></mfrac><mo class="MathClass-punc">.</mo>
+</math></td><td class="eq-no">(3)</td></tr></table>
+<!--l. 75--><p class="noindent">Eq. <a href="#x1-1002r2">2<!--tex4ht:ref: eq:iirf --></a> and (<a href="#x1-1003r3">3<!--tex4ht:ref: eq:iirf_trafofct --></a>) can be written in the more ”traditional” (<a href="#Xwiki:IIR">Wikipedia</a>, <a href="#Xwiki:IIR">2016</a>) forms
+</p>
+<table class="equation"><tr><td> <a id="x1-1004r4"></a>
+<!--l. 77--><math class="equation" display="block" xmlns="http://www.w3.org/1998/Math/MathML">
+<mi>y</mi><mrow><mo class="MathClass-open">[</mo><mrow><mi>n</mi></mrow><mo class="MathClass-close">]</mo></mrow> <mo class="MathClass-rel">=</mo> <msubsup><mrow><mi>b</mi></mrow><mrow><mn>0</mn></mrow><mrow><mi>′</mi></mrow></msubsup><mi>x</mi><mrow><mo class="MathClass-open">[</mo><mrow><mi>n</mi></mrow><mo class="MathClass-close">]</mo></mrow> <mo class="MathClass-bin">−</mo> <msubsup><mrow><mi>a</mi></mrow><mrow>
+<mn>1</mn></mrow><mrow><mi>′</mi></mrow></msubsup><mi>y</mi><mrow><mo class="MathClass-open">[</mo><mrow><mi>n</mi> <mo class="MathClass-bin">−</mo> <mn>1</mn></mrow><mo class="MathClass-close">]</mo></mrow><mo class="MathClass-punc">.</mo>
+</math></td><td class="eq-no">(4)</td></tr></table>
+<!--l. 81--><p class="noindent">and
+</p>
+<table class="equation"><tr><td> <a id="x1-1005r5"></a>
+<!--l. 83--><math class="equation" display="block" xmlns="http://www.w3.org/1998/Math/MathML">
+<mi>H</mi><mrow><mo class="MathClass-open">(</mo><mrow><mi>z</mi></mrow><mo class="MathClass-close">)</mo></mrow> <mo class="MathClass-rel">=</mo> <mfrac><mrow><msubsup><mrow><mi>b</mi></mrow><mrow><mn>0</mn></mrow><mrow><mi>′</mi></mrow></msubsup></mrow>
+<mrow><mn>1</mn> <mo class="MathClass-bin">+</mo> <msubsup><mrow><mi>a</mi></mrow><mrow><mn>1</mn></mrow><mrow><mi>′</mi></mrow></msubsup><msup><mrow><mi>z</mi></mrow><mrow><mo class="MathClass-bin">−</mo><mn>1</mn></mrow></msup></mrow></mfrac>
+</math></td><td class="eq-no">(5)</td></tr></table>
+<!--l. 87--><p class="noindent">by setting <!--l. 87--><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><msubsup><mrow><mi>b</mi></mrow><mrow><mn>0</mn></mrow><mrow><mi>′</mi></mrow></msubsup> <mo class="MathClass-rel">=</mo> <msub><mrow><mi>b</mi></mrow><mrow>
+<mn>0</mn></mrow></msub><mo class="MathClass-bin">∕</mo><msub><mrow><mi>a</mi></mrow><mrow><mn>0</mn></mrow></msub></math> and
+<!--l. 87--><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><msubsup><mrow><mi>a</mi></mrow><mrow><mn>1</mn></mrow><mrow><mi>′</mi></mrow></msubsup> <mo class="MathClass-rel">=</mo> <msub><mrow><mi>a</mi></mrow><mrow>
+<mn>1</mn></mrow></msub><mo class="MathClass-bin">∕</mo><msub><mrow><mi>a</mi></mrow><mrow><mn>0</mn></mrow></msub></math>. Multiplying the
+previous line by <!--l. 87--><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><mi>z</mi></math>
+yields
+</p>
+<table class="equation"><tr><td> <a id="x1-1006r6"></a>
+<!--l. 89--><math class="equation" display="block" xmlns="http://www.w3.org/1998/Math/MathML">
+<mi>H</mi><mrow><mo class="MathClass-open">(</mo><mrow><mi>z</mi></mrow><mo class="MathClass-close">)</mo></mrow> <mo class="MathClass-rel">=</mo> <mfrac><mrow><msubsup><mrow><mi>b</mi></mrow><mrow><mn>0</mn></mrow><mrow><mi>′</mi></mrow></msubsup><mi>z</mi></mrow>
+<mrow><mi>z</mi> <mo class="MathClass-bin">+</mo> <msubsup><mrow><mi>a</mi></mrow><mrow><mn>1</mn></mrow><mrow><mi>′</mi></mrow></msubsup></mrow></mfrac><mo class="MathClass-punc">,</mo>
+</math></td><td class="eq-no">(6)</td></tr></table>
+<!--l. 93--><p class="noindent">showing that <!--l. 93--><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><mi>H</mi><mrow><mo class="MathClass-open">(</mo><mrow><mi>z</mi></mrow><mo class="MathClass-close">)</mo></mrow></math>
+has a zero at <!--l. 93--><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><mi>z</mi> <mo class="MathClass-rel">=</mo> <mn>0</mn></math>
+and a pole at <!--l. 93--><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><mi>z</mi> <mo class="MathClass-rel">=</mo> <mo class="MathClass-bin">−</mo><msubsup><mrow><mi>a</mi></mrow><mrow><mn>1</mn></mrow><mrow><mi>′</mi></mrow></msubsup></math>.
+Setting <!--l. 93--><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><mi>z</mi> <mo class="MathClass-rel">=</mo> <mi>x</mi> <mo class="MathClass-bin">+</mo> <mi>i</mi><mi>y</mi></math>
+one obtains
+</p><!--l. 95--><p class="noindent">
+</p><!--tex4ht:inline--><!--l. 98--><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><mtable class="align" columnalign="left">
+<mtr><mtd class="align-odd" columnalign="right"><mi>R</mi><mi>e</mi><mrow><mo class="MathClass-open">(</mo><mrow><mi>H</mi><mrow><mo class="MathClass-open">(</mo><mrow><mi>z</mi></mrow><mo class="MathClass-close">)</mo></mrow></mrow><mo class="MathClass-close">)</mo></mrow></mtd> <mtd class="align-even"> <mo class="MathClass-rel">=</mo> <msubsup><mrow><mi>b</mi></mrow><mrow><mn>0</mn></mrow><mrow><mi>′</mi></mrow></msubsup> <mfrac><mrow><msup><mrow><mi>x</mi></mrow><mrow><mn>2</mn></mrow></msup> <mo class="MathClass-bin">+</mo> <msup><mrow><mi>y</mi></mrow><mrow><mn>2</mn></mrow></msup> <mo class="MathClass-bin">−</mo> <msubsup><mrow><mi>a</mi></mrow><mrow>
+<mn>1</mn></mrow><mrow><mi>′</mi></mrow></msubsup><mi>x</mi></mrow>
+<mrow><msup><mrow><mi>x</mi></mrow><mrow><mn>2</mn></mrow></msup> <mo class="MathClass-bin">+</mo> <msup><mrow><mi>y</mi></mrow><mrow><mn>2</mn></mrow></msup> <mo class="MathClass-bin">−</mo> <mn>2</mn><msubsup><mrow><mi>a</mi></mrow><mrow><mn>1</mn></mrow><mrow><mi>′</mi></mrow></msubsup><mi>x</mi> <mo class="MathClass-bin">+</mo> <msubsup><mrow><mi>a</mi></mrow><mrow><mn>1</mn></mrow><mrow><msup><mrow></mrow><mrow><mi>′</mi></mrow></msup>
+<mn>2</mn></mrow></msubsup></mrow></mfrac><mspace width="2em"></mspace></mtd> <mtd class="align-label" columnalign="right"><mstyle class="label" id="x1-1007r7"></mstyle><!--endlabel--><mstyle class="maketag"><mtext>(7)</mtext></mstyle>
+</mtd></mtr><mtr><mtd class="align-odd" columnalign="right"><mi>I</mi><mi>m</mi><mrow><mo class="MathClass-open">(</mo><mrow><mi>H</mi><mrow><mo class="MathClass-open">(</mo><mrow><mi>z</mi></mrow><mo class="MathClass-close">)</mo></mrow></mrow><mo class="MathClass-close">)</mo></mrow></mtd> <mtd class="align-even"> <mo class="MathClass-rel">=</mo> <mo class="MathClass-bin">−</mo><mfenced close=")" open="(" separators=""><mrow><mfrac><mrow><msubsup><mrow><mi>b</mi></mrow><mrow><mn>0</mn></mrow><mrow><mi>′</mi></mrow></msubsup></mrow>
+<mrow><msubsup><mrow><mi>a</mi></mrow><mrow><mn>1</mn></mrow><mrow><mi>′</mi></mrow></msubsup></mrow></mfrac></mrow></mfenced> <mfrac><mrow><mi>y</mi></mrow>
+<mrow><msup><mrow><mi>x</mi></mrow><mrow><mn>2</mn></mrow></msup> <mo class="MathClass-bin">+</mo> <msup><mrow><mi>y</mi></mrow><mrow><mn>2</mn></mrow></msup> <mo class="MathClass-bin">−</mo> <mn>2</mn><msubsup><mrow><mi>a</mi></mrow><mrow><mn>1</mn></mrow><mrow><mi>′</mi></mrow></msubsup><mi>x</mi> <mo class="MathClass-bin">+</mo> <msubsup><mrow><mi>a</mi></mrow><mrow><mn>1</mn></mrow><mrow><msup><mrow></mrow><mrow><mi>′</mi></mrow></msup>
+<mn>2</mn></mrow></msubsup></mrow></mfrac><mo class="MathClass-punc">.</mo><mspace width="2em"></mspace></mtd> <mtd class="align-label" columnalign="right"><mstyle class="label" id="x1-1008r8"></mstyle><!--endlabel--><mstyle class="maketag"><mtext>(8)</mtext></mstyle>
+</mtd></mtr></mtable></math>
+<!--l. 100--><p class="noindent">The speciﬁc ﬁlter (<a href="#x1-1001r1">1<!--tex4ht:ref: eq:freifilter --></a>) is obtained by setting
+</p><!--l. 102--><p class="noindent">
+</p><!--tex4ht:inline--><!--l. 105--><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><mtable class="align" columnalign="left">
+<mtr><mtd class="align-odd" columnalign="right"><msubsup><mrow><mi>b</mi></mrow><mrow><mn>0</mn></mrow><mrow><mi>′</mi></mrow></msubsup> <mo class="MathClass-rel">=</mo> <mn>1</mn><mo class="MathClass-punc">.</mo><mn>5</mn><mn>4</mn></mtd> <mtd class="align-even"><mspace width="2em"></mspace></mtd> <mtd class="align-label" columnalign="right"><mstyle class="label" id="x1-1009r9"></mstyle><!--endlabel--><mstyle class="maketag"><mtext>(9)</mtext></mstyle>
+</mtd></mtr><mtr><mtd class="align-odd" columnalign="right"><msubsup><mrow><mi>a</mi></mrow><mrow><mn>1</mn></mrow><mrow><mi>′</mi></mrow></msubsup> <mo class="MathClass-rel">=</mo> <mn>0</mn><mo class="MathClass-punc">.</mo><mn>5</mn><mn>4</mn><mo class="MathClass-punc">,</mo></mtd> <mtd class="align-even"><mspace width="2em"></mspace></mtd> <mtd class="align-label" columnalign="right"><mstyle class="label" id="x1-1010r10"></mstyle><!--endlabel--><mstyle class="maketag"><mtext>(10)</mtext></mstyle>
+</mtd></mtr></mtable></math>
+<!--l. 107--><p class="noindent">and <!--l. 107--><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><mi>R</mi><mi>e</mi><mrow><mo class="MathClass-open">(</mo><mrow><mi>H</mi><mrow><mo class="MathClass-open">(</mo><mrow><mi>z</mi></mrow><mo class="MathClass-close">)</mo></mrow></mrow><mo class="MathClass-close">)</mo></mrow></math> is
+shown in Fig. <a href="#x1-1011r1">1<!--tex4ht:ref: fig:h --></a>
+</p>
+<hr class="figure"/><div class="figure">
+<a id="x1-1011r1"></a>
+<!--l. 111--><p class="noindent" style="text-align:center"><img alt="PIC" src="../figures/h.svg" style="width: 100%; max-width: 800px;"/>
+<br/> </p><div class="caption"><span class="id">Figure 1: </span><span class="content"><!--l. 112--><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><mi>R</mi><mi>e</mi><mrow><mo class="MathClass-open">(</mo><mrow><mi>H</mi><mrow><mo class="MathClass-open">(</mo><mrow><mi>z</mi></mrow><mo class="MathClass-close">)</mo></mrow></mrow><mo class="MathClass-close">)</mo></mrow></math>
+for <!--l. 112--><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><msubsup><mrow><mi>a</mi></mrow><mrow><mn>1</mn></mrow><mrow><mi>′</mi></mrow></msubsup> <mo class="MathClass-rel">=</mo> <mn>0</mn><mo class="MathClass-punc">.</mo><mn>5</mn><mn>4</mn></math>
+and <!--l. 112--><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><msubsup><mrow><mi>b</mi></mrow><mrow><mn>0</mn></mrow><mrow><mi>′</mi></mrow></msubsup> <mo class="MathClass-rel">=</mo> <mn>1</mn><mo class="MathClass-punc">.</mo><mn>5</mn><mn>4</mn></math>.
+The unit circle is shown in black.</span></div><!--tex4ht:label?: x1-1011r1 -->
+</div><hr class="endfigure"/>
+<a id="Q1-1-3"></a>
+<h3 class="likesectionHead"><a id="x1-20001"></a>References</h3>
+<div class="thebibliography">
+<p class="bibitem"><span class="biblabel">
+<a id="Xfrei2002digital"></a><span class="bibsp">   </span></span>Frei, B., 2002. Digital sound generation.
+  </p>
+<p class="bibitem"><span class="biblabel">
+<a id="Xwiki:IIR"></a><span class="bibsp">   </span></span>Wikipedia, 2016. Inﬁnite impulse response. <span class="underline"><a href="https://en.wikipedia.org/wiki/Infinite_impulse_response">External link</a></span> [Online; accessed 2016/12/16].
+</p>
+</div>
+</body></div></html>

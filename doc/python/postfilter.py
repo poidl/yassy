@@ -11,7 +11,7 @@ import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
-figname = 'figure.svg'
+figname = 'h.svg'
 
 b0 = 1.54
 a1 = 0.54
