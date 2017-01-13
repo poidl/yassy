@@ -11,7 +11,7 @@ authors = ["stefan"]
 libc = "*"
 mygsl = { path = "mygsl" }
 midi= { path = "midi" }
-lv2 = { path = "../lv2" }
+lv2 = "0.2.0"
 
 [lib]
 name = "yassy"

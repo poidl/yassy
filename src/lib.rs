@@ -102,13 +102,13 @@ impl Descriptor {
 
 static S: &'static [u8] = b"http://example.org/yassy\0";
 
-static mut desc: lv2::LV2Descriptor = lv2::LV2Descriptor {
+static mut DESC: lv2::LV2Descriptor = lv2::LV2Descriptor {
     uri: 0 as *const libc::c_char, // ptr::null() isn't const fn (yet)
     instantiate: Descriptor::instantiate,
     connect_port: Descriptor::connect_port,
-    activate: Descriptor::activate,
+    activate: Some(Descriptor::activate),
     run: Descriptor::run,
-    deactivate: Descriptor::deactivate,
+    deactivate: Some(Descriptor::deactivate),
     cleanup: Descriptor::cleanup,
     extension_data: Descriptor::extension_data,
 };
@@ -121,8 +121,8 @@ pub extern "C" fn lv2_descriptor(index: i32) -> *const lv2::LV2Descriptor {
         // credits to ker on stackoverflow: http://stackoverflow.com/questions/31334356/static-struct-with-c-strings-for-lv2-plugin (duplicate) or http://stackoverflow.com/questions/25880043/creating-a-static-c-struct-containing-strings
         let ptr = S.as_ptr() as *const libc::c_char;
         unsafe {
-            desc.uri = ptr;
-            return &desc as *const lv2::LV2Descriptor;
+            DESC.uri = ptr;
+            return &DESC as *const lv2::LV2Descriptor;
         }
     }
 }
