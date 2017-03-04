@@ -105,12 +105,25 @@ b'_0=1.54 \\
 a'_1=0.54,
 \end{align}
 
-and $Re(H(z))$ is shown in Fig. \ref{fig:h}
+and $Re(H(z))$ is shown in Fig. \ref{fig:h}.
 
 \begin{figure}[H]
 	\centering
 	\includegraphics[width=0.8\textwidth]{h.pdf}
 	\caption{$Re(H(z))$ for $a'_1=0.54$ and $b'_0=1.54$. The unit circle is shown in black.}\label{fig:h}
+\end{figure}
+
+Evaluating $Re(H(z))$ at the unit circle $z=\cos{\varphi}+i \sin{\varphi}$ yields
+
+\begin{equation}
+Re(H(\varphi))=b'_0\frac{1-a'_1\cos{\varphi}}{1-2a'_1\cos{\varphi}+a_1^{'2}},
+\end{equation}
+
+shown in Fig.
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=0.8\textwidth]{h_unit.pdf}
+	\caption{$Re(H(\varphi))$ for }\label{fig:h_unit}
 \end{figure}
 
 

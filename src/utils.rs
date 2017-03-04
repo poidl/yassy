@@ -140,8 +140,8 @@ const N: usize = 4 * (2700 - 1) + 1; // Formula: nt*(nppt-1)+1 as usize; nt is e
 const M: usize = 2 * (2700 - 1) + 1; // Half segment
 
 // blit_2t returns the right half of the full segment
+#[no_mangle] // for call from Python
 pub fn blit_2t(fs: f64) -> [f64; M] {
-
     let mut t2 = [0f64; M];
 
     let mut t4 = blit_4t(fs);
