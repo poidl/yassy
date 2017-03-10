@@ -86,7 +86,7 @@ aa = a[::2]
 b = sig.remez(16, f, aa, wgt)
 [w, h] = sig.freqz(b, 1, rlen * zpad, 'whole')
 
-figname = 'frei_xy.svg'
+figname = 'frei_prefilter_magnitude_response.svg'
 fig = plt.figure()
 plt.plot(fs * f / 1000, a)
 plt.plot(0.5 * fs * w / np.pi / 1000, abs(h))
@@ -106,7 +106,7 @@ wspec = np.sqrt(np.abs(utils.rdtpsd(res)))
 rng = round(1000 * 20000 / fs)
 xidx = np.arange(rng + 1)
 
-figname = 'frei_xyz.svg'
+figname = 'frei_normalized_overall_magnitude_response.svg'
 fig = plt.figure()
 plt.plot(20 * xidx / rng, wspec[: int(rng + 1)] / wspec[0])
 plt.xlabel('Frequency in kHz')
