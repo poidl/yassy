@@ -60,6 +60,8 @@ xidx = np.arange(rng + 1)
 figname = 'frei_appendixB1b.svg'
 fig = plt.figure()
 plt.semilogy((fmax / 1000) * xidx / rng, wspec[: (rng + 1)])
+x_save = (fmax / 1000) * xidx / rng
+y_save = wspec[: (rng + 1)]
 plt.ylim(1e-5, 1)
 plt.xlabel('Frequency in kHz')
 plt.title('Amplitude Spectrum')
@@ -99,7 +101,7 @@ fig.savefig('../figures/' + figname)
 
 
 #  check by convolving prefilter and bandlimited impulse
-imp = g[:ppiv:pts]
+imp = g[:pts:ppiv]
 res = np.convolve(b, imp)
 res = np.concatenate([res, np.zeros(1000 - len(res))])
 wspec = np.sqrt(np.abs(utils.rdtpsd(res)))
@@ -109,6 +111,17 @@ xidx = np.arange(rng + 1)
 figname = 'frei_normalized_overall_magnitude_response.svg'
 fig = plt.figure()
 plt.plot(20 * xidx / rng, wspec[: int(rng + 1)] / wspec[0])
+plt.xlim(0, 20)
+plt.xlabel('Frequency in kHz')
+plt.title('Normalized Overall Magnitude Response')
+plt.grid()
+fig.savefig('../figures/' + figname)
+
+figname = 'frei_normalized_overall_magnitude_response_compare.svg'
+fig = plt.figure()
+plt.plot(20 * xidx / rng, wspec[: int(rng + 1)] / wspec[0])
+plt.plot(x_save, y_save)
+plt.xlim(0, 20)
 plt.xlabel('Frequency in kHz')
 plt.title('Normalized Overall Magnitude Response')
 plt.grid()
