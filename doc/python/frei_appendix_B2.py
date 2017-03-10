@@ -76,21 +76,27 @@ fig.savefig('../figures/' + figname)
 fcomp = 21000
 rng = 1 + 2 * np.floor(0.5 * rlen * zpad * fcomp / fs - 0.5)
 xidx = np.arange(rng + 1)
-a = wspec[: int(rng + 1)]
+# This is different to Frei's Matlab version. See Matlab/Scipy docs for
+# differences in call signatures. Whereas the Matlab function firpm
+# (FIR Parks-McClellan, former "remez" wants amplitudes on the band edges,
+# Scipy wants them in the band *center*
+# As a consequence, the plots will differ from Frei Fig. 14
+a = 0.5 * (wspec[: int(rng)] + wspec[1: int(rng + 1)])
+a = a[::2]
 a = 1.0 / a
 ftune = 0.35
 f = xidx / (ftune + rlen * zpad)
 wgt = np.arange((rng + 1) / 2,  0, -1)
 wgt = 1 + wgt * wgt
-# This is different to Frei's Matlab version. See Matlab/Scipy docs for
-# differences in call signatures
-aa = a[::2]
-b = sig.remez(16, f, aa, wgt)
+
+b = sig.remez(16, f, a, wgt)
 [w, h] = sig.freqz(b, 1, rlen * zpad, 'whole')
 
 figname = 'frei_prefilter_magnitude_response.svg'
 fig = plt.figure()
-plt.plot(fs * f / 1000, a)
+f_center = 0.5 * (f[: -1] + f[1:])
+f_center = f_center[::2]
+plt.plot(fs * f_center / 1000, a)
 plt.plot(0.5 * fs * w / np.pi / 1000, abs(h))
 plt.xlim(0, fs / 1000)
 plt.ylim(0, max(abs(h)))
