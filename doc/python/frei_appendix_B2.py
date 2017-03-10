@@ -123,7 +123,7 @@ plt.title('Normalized Overall Magnitude Response')
 plt.grid()
 fig.savefig('../figures/' + figname)
 
-figname = 'frei_normalized_overall_magnitude_response_compare.svg'
+figname = 'frei_normalized_overall_magnitude_response_compare_1.svg'
 fig = plt.figure()
 plt.plot(20 * xidx / rng, wspec[: int(rng + 1)] / wspec[0])
 plt.plot(x_save, y_save)
@@ -131,4 +131,21 @@ plt.xlim(0, 20)
 plt.xlabel('Frequency in kHz')
 plt.title('Normalized Overall Magnitude Response')
 plt.grid()
+fig.savefig('../figures/' + figname)
+
+figname = 'frei_normalized_overall_magnitude_response_compare_2.svg'
+fig = plt.figure()
+xax = 0.5 * fs * w / np.pi / 1000
+ynew = np.interp(xax, x_save, y_save)
+plt.semilogy(xax, ynew)
+plt.semilogy(xax, abs(h) * ynew)
+plt.xlim(0, fs / 1000)
+plt.ylim(1e-5, 1.1)
+plt.xlabel('Frequency in kHz')
+plt.title('Effect of prefilter')
+plt.grid()
+# markers at 20 kHz, fs - 20 kHz and fs
+plt.axvline(20, color="g")
+plt.axvline(fs / 1000 - 20, color="r")
+plt.axvline(fs / 1000, color="r")
 fig.savefig('../figures/' + figname)
