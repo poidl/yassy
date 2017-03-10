@@ -1,7 +1,7 @@
 #!/bin/python
 # pylint: disable=C0103
 
-"""Python translation of Frei Appendix B1."""
+"""Python translation of Frei Appendix B1 and B2."""
 
 # Frei, B.: Digital sound generation. Institute for Computer Music and
 # Sound Technology (ICST) Zurich University of the Arts.
