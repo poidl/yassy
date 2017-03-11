@@ -68,8 +68,8 @@ fs = N * f0
 
 saw = utils.sawtooth(N)
 ###
-# plt.plot(saw)
-# saw = utils.blit_apply(saw, f0, 48000)
+plt.plot(saw)
+saw = utils.blit_apply(saw, f0, 48000)
 # plt.plot(saw)
 ###
 # patch to even length

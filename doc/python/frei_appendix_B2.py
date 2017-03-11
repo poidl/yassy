@@ -12,7 +12,6 @@ import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 # import bindings
-import utils
 
 # parameters
 fs = 48000
@@ -49,7 +48,7 @@ fig.savefig('../figures/' + figname)
 
 zpad = 20
 g2 = np.concatenate([g, np.zeros((zpad - 1) * pts)])
-wspec = np.sqrt(np.abs(utils.rdtpsd(g2)))
+wspec = np.abs(np.fft.rfft(g2, norm="ortho"))
 wspec = wspec / max(wspec)
 # cut = 0.00001
 # wspec[wspec > cut] = cut
@@ -110,7 +109,7 @@ fig.savefig('../figures/' + figname)
 imp = g[:pts:ppiv]
 res = np.convolve(b, imp)
 res = np.concatenate([res, np.zeros(1000 - len(res))])
-wspec = np.sqrt(np.abs(utils.rdtpsd(res)))
+wspec = np.abs(np.fft.rfft(res, norm="ortho"))
 rng = round(1000 * 20000 / fs)
 xidx = np.arange(rng + 1)
 
