@@ -26,8 +26,8 @@ fac = b0 / (xx**2 + yy**2 + 2 * a1 * xx + a1**2)
 re = fac * (xx**2 + yy**2 + a1 * xx)
 im = fac * a1 * yy
 
-re[re < 0.5] = np.nan
-re[re > 5] = np.nan
+
+re[np.logical_or(re < 0.5, re > 5)] = np.nan
 
 figname = 'h.svg'
 fig = plt.figure()
@@ -40,19 +40,18 @@ plt.xlabel('Re')
 plt.ylabel('Im')
 
 fig.savefig('../figures/' + figname)
-print('done')
 
 #######################################
 
-phi = np.arange(0.0, 3, 0.01)
+phi = np.linspace(0, np.pi, 100)
 p = b0 * (1 + a1 * np.cos(phi)) / (1 + 2 * a1 * np.cos(phi) + a1**2)
 
-s = 1 / phi
+s = 1 / phi[1:]
 
 figname = 'h_unit.svg'
 fig = plt.figure()
 plt.semilogy(phi / (2 * np.pi), p)
-plt.semilogy(phi / (2 * np.pi), s)
+plt.semilogy(phi[1:] / (2 * np.pi), s)
 plt.grid()
 fig.savefig('../figures/' + figname)
 print('done')
