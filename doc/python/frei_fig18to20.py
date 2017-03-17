@@ -41,7 +41,7 @@ g = 2.0 * g / g[-1]
 g[int(np.floor(pts / 2)):] = g[int(np.floor(pts / 2)):] - 2.0
 g = g / max(g)
 
-fc = 4000
+fc = 1000
 # number of sampling points relative to rlen, times ppiv
 pts3 = (fs / fc) * ppiv
 g2 = np.linspace(0, -2, pts3)
@@ -51,25 +51,26 @@ istart = int(np.floor(pts3 / 2) - ppiv * rlen / 2)
 iend = istart + pts
 g2[istart:iend] = g2[istart:iend] + g
 
-# # subsample to sample rate
-# g2 = g2[::int(np.floor(ppiv))]
-# subsample to twice the sample rate (to get fs in the plot)
-g2 = g2[::int(np.floor(ppiv / 2))]
+# subsample to sample rate
+g2 = g2[::int(np.floor(ppiv))]
+# # subsample to twice the sample rate (to get fs in the plot)
+# g2 = g2[::int(np.floor(ppiv / 2))]
 
 wspec = np.abs(np.fft.rfft(g2, norm="ortho"))
 wspec = wspec / max(wspec)
 
 
-figname = 'frei_appendix_Fig_18.svg'
+figname = 'frei_appendix_Fig_18_to_20.svg'
 fig = plt.figure()
 
-zeroToOne = np.linspace(0, 1, len(wspec))
-xax = (fs / 1000) * zeroToOne
-xaxRad = 2 * np.pi * zeroToOne
+# zeroToOne = np.linspace(0, 1, len(wspec))
+# xax = (fs / 1000) * zeroToOne
+# xaxRad = 2 * np.pi * zeroToOne
 
-# zeroToOneHalf = np.linspace(0, 0.5, len(wspec))
-# xax = (fs / 1000) * zeroToOneHalf
-# xaxRad = 2 * np.pi * zeroToOneHalf
+zeroToOneHalf = np.linspace(0, 0.5, len(wspec))
+xax = (fs / 1000) * zeroToOneHalf
+xaxRad = 2 * np.pi * zeroToOneHalf
+
 b0 = 1.54
 a1 = 0.54
 pf = b0 * (1 + a1 * np.cos(xaxRad)) / (1 + 2 * a1 * np.cos(xaxRad) + a1**2)
