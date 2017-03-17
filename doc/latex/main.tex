@@ -94,8 +94,8 @@ H(z)=\frac{b'_0z}{z+a'_1},
 showing that $H(z)$ has a zero at $z=0$ and a pole at $z=-a'_1$. Setting $z=x+iy$ one obtains
 
 \begin{align}
-Re(H(z)) &= b'_0\frac{x^2+y^2-a'_1x}{x^2+y^2-2a'_1x+a_1^{'2}}\\
-Im(H(z)) &= -\left(\frac{b'_0}{a'_1}\right)\frac{y}{x^2+y^2-2a'_1x+a_1^{'2}}.
+Re(H(z)) &= b'_0\frac{x^2+y^2+a'_1x}{x^2+y^2+2a'_1x+a_1^{'2}}\\
+Im(H(z)) &= b'_0\frac{a'_1y}{x^2+y^2+2a'_1x+a_1^{'2}}
 \end{align}
 
 The specific filter \eqref{eq:freifilter} is obtained by setting
@@ -107,24 +107,24 @@ a'_1=0.54,
 
 and $Re(H(z))$ is shown in Fig. \ref{fig:h}.
 
-\begin{figure}[H]
-	\centering
-	\includegraphics[width=0.8\textwidth]{h.pdf}
-	\caption{$Re(H(z))$ for $a'_1=0.54$ and $b'_0=1.54$. The unit circle is shown in black.}\label{fig:h}
-\end{figure}
+%\begin{figure}[H]
+%	\centering
+%	\includegraphics[width=0.8\textwidth]{h.pdf}
+%	\caption{$Re(H(z))$ for $a'_1=0.54$ and $b'_0=1.54$. The unit circle is shown in black.}\label{fig:h}
+%\end{figure}
 
 Evaluating $Re(H(z))$ at the unit circle $z=\cos{\varphi}+i \sin{\varphi}$ yields
 
 \begin{equation}
-Re(H(\varphi))=b'_0\frac{1-a'_1\cos{\varphi}}{1-2a'_1\cos{\varphi}+a_1^{'2}},
+Re(H(\varphi))=b'_0\frac{1+a'_1\cos{\varphi}}{1+2a'_1\cos{\varphi}+a_1^{'2}},
 \end{equation}
 
 shown in Fig.
-\begin{figure}[H]
-	\centering
-	\includegraphics[width=0.8\textwidth]{h_unit.pdf}
-	\caption{$Re(H(\varphi))$ for }\label{fig:h_unit}
-\end{figure}
+%\begin{figure}[H]
+%	\centering
+%	\includegraphics[width=0.8\textwidth]{h_unit.pdf}
+%	\caption{$Re(H(\varphi))$ for }\label{fig:h_unit}
+%\end{figure}
 
 
 
