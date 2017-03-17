@@ -1,7 +1,7 @@
 #!/bin/python
 # pylint: disable=C0103
 
-"""Python translation of Frei's figures 18-20."""
+"""Apply postfilter in time and compare with Frei fig. 18-20."""
 
 # Frei, B.: Digital sound generation. Institute for Computer Music and
 # Sound Technology (ICST) Zurich University of the Arts.
@@ -27,7 +27,7 @@ apobeta = 0.5
 # limit up to fs. This is what Frei does, but doesn't this yield a wrong
 # magnitude response if one uses the so-found coefficients in the actual
 # sample rate. Better set to false for adjusting coefficients!
-subs2 = True
+subs2 = False
 
 pts = ppiv * rlen
 x1 = np.arange(pts)
@@ -63,11 +63,20 @@ if subs2:
 else:
     g2 = g2[::int(np.floor(ppiv))]
 
+# apply postfilter
+# y[n]=b0*x[n]-a1*y[n-1]
+b0 = 1.54
+a1 = 0.54
+g3 = g2.copy()
+for i in range(1, len(g2)):
+    g3[i] = b0 * g2[i] - a1 * g3[i - 1]
+
 wspec = np.abs(np.fft.rfft(g2, norm="ortho"))
 wspec = wspec / max(wspec)
+wspec2 = np.abs(np.fft.rfft(g3, norm="ortho"))
+wspec2 = wspec2 / max(wspec2)
 
-
-figname = 'frei_appendix_Fig_18_to_20_true.svg'
+figname = 'postfilter_time.svg'
 fig = plt.figure()
 
 if subs2:
@@ -79,13 +88,15 @@ else:
     xax = (fs / 1000) * zeroToOneHalf
     xaxRad = 2 * np.pi * zeroToOneHalf
 
-b0 = 1.54
-a1 = 0.54
+# postfilter magnitude response
 pf = b0 * (1 + a1 * np.cos(xaxRad)) / (1 + 2 * a1 * np.cos(xaxRad) + a1**2)
 
 plt.semilogy(xax, wspec, "*")
-plt.semilogy(xax, xax[1] / xax)
 plt.semilogy(xax, wspec * pf, "*")
+
+plt.semilogy(xax, wspec2)
+
+plt.semilogy(xax, xax[1] / xax)
 plt.grid()
 # # markers at 20 kHz, fs - 20 kHz and fs
 plt.axvline(fc / 1000, color="b")
