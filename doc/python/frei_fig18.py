@@ -41,14 +41,14 @@ g = 2.0 * g / g[-1]
 g[int(np.floor(pts / 2)):] = g[int(np.floor(pts / 2)):] - 2.0
 g = g / max(g)
 
-#  4 KHz = 48/12=48/(3*rlen) => n=3
-n = 3
-pts2 = ppiv * n * rlen
-g2 = np.linspace(0, -2, pts2)
-g2[int(np.floor(pts2 / 2)):] = g2[int(np.floor(pts2 / 2)):] + 2.0
+fc = 4000
+# number of sampling points relative to rlen, times ppiv
+pts3 = (fs / fc) * ppiv
+g2 = np.linspace(0, -2, pts3)
+g2[int(np.floor(pts3 / 2)):] = g2[int(np.floor(pts3 / 2)):] + 2.0
 # insert segment at istart
-istart = int(np.floor(n / 2)) * ppiv * rlen
-iend = int(np.floor(n / 2)) * ppiv * rlen + pts
+istart = int(np.floor(pts3 / 2) - ppiv * rlen / 2)
+iend = istart + pts
 g2[istart:iend] = g2[istart:iend] + g
 
 # # subsample to sample rate
@@ -62,10 +62,14 @@ wspec = wspec / max(wspec)
 
 figname = 'frei_appendix_Fig_18.svg'
 fig = plt.figure()
-# plt.plot(g2, "*")
+
 zeroToOne = np.linspace(0, 1, len(wspec))
 xax = (fs / 1000) * zeroToOne
 xaxRad = 2 * np.pi * zeroToOne
+
+# zeroToOneHalf = np.linspace(0, 0.5, len(wspec))
+# xax = (fs / 1000) * zeroToOneHalf
+# xaxRad = 2 * np.pi * zeroToOneHalf
 b0 = 1.54
 a1 = 0.54
 pf = b0 * (1 + a1 * np.cos(xaxRad)) / (1 + 2 * a1 * np.cos(xaxRad) + a1**2)
