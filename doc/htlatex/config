@@ -13,8 +13,8 @@ installimgpath = ../figures
 builddir = htl_tmp_builddir
 # Set an alternative document title and subtitle. Empty string defaults to (possibly
 # too long) latex title.
-title = ""
-subtitle = ""
+title = 
+subtitle = 
 # Set an alternative document title in <head> (title for browser tabs). Empty string defaults to (possibly
 # too long) latex title.
-headtitle = ""
+headtitle = 
