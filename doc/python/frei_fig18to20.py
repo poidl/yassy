@@ -48,7 +48,7 @@ g = 2.0 * g / g[-1]
 g[int(np.floor(pts / 2)):] = g[int(np.floor(pts / 2)):] - 2.0
 g = g / max(g)
 
-fc = 1000
+fc = 12000
 # number of sampling points relative to rlen, times ppiv
 pts3 = (fs / fc) * ppiv
 g2 = np.linspace(0, -2, pts3)
@@ -88,7 +88,7 @@ plt.semilogy(xax, xax[1] / xax)
 plt.semilogy(xax, wspec * pf, "*")
 plt.grid()
 # # markers at 20 kHz, fs - 20 kHz and fs
-plt.axvline(fs / (3 * rlen * 1000), color="b")
+plt.axvline(fc / 1000, color="b")
 plt.axvline(20, color="g")
 plt.axvline(fs / 1000 - 20, color="r")
 plt.axvline(fs / 1000, color="r")
