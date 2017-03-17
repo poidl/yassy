@@ -22,6 +22,13 @@ beta = 8.3
 apof = 0.5
 apobeta = 0.5
 
+# plotting parameters
+# if subs2 is true, subsample to twice the sample rate, to get the x-axis
+# limit up to fs. This is what Frei does, but doesn't this yield a wrong
+# magnitude response if one uses the so-found coefficients in the actual
+# sample rate. Better set to false for adjusting coefficients!
+subs2 = False
+
 pts = ppiv * rlen
 x1 = np.arange(pts)
 x2 = rlen * 2 * (x1 - (pts - 1) / 2 + 0.00001) / (pts - 1)
@@ -51,10 +58,10 @@ istart = int(np.floor(pts3 / 2) - ppiv * rlen / 2)
 iend = istart + pts
 g2[istart:iend] = g2[istart:iend] + g
 
-# subsample to sample rate
-g2 = g2[::int(np.floor(ppiv))]
-# # subsample to twice the sample rate (to get fs in the plot)
-# g2 = g2[::int(np.floor(ppiv / 2))]
+if subs2:
+    g2 = g2[::int(np.floor(ppiv / 2))]
+else:
+    g2 = g2[::int(np.floor(ppiv))]
 
 wspec = np.abs(np.fft.rfft(g2, norm="ortho"))
 wspec = wspec / max(wspec)
@@ -63,13 +70,14 @@ wspec = wspec / max(wspec)
 figname = 'frei_appendix_Fig_18_to_20.svg'
 fig = plt.figure()
 
-# zeroToOne = np.linspace(0, 1, len(wspec))
-# xax = (fs / 1000) * zeroToOne
-# xaxRad = 2 * np.pi * zeroToOne
-
-zeroToOneHalf = np.linspace(0, 0.5, len(wspec))
-xax = (fs / 1000) * zeroToOneHalf
-xaxRad = 2 * np.pi * zeroToOneHalf
+if subs2:
+    zeroToOne = np.linspace(0, 1, len(wspec))
+    xax = (fs / 1000) * zeroToOne
+    xaxRad = 2 * np.pi * zeroToOne
+else:
+    zeroToOneHalf = np.linspace(0, 0.5, len(wspec))
+    xax = (fs / 1000) * zeroToOneHalf
+    xaxRad = 2 * np.pi * zeroToOneHalf
 
 b0 = 1.54
 a1 = 0.54
