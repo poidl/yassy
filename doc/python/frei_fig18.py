@@ -63,12 +63,22 @@ wspec = wspec / max(wspec)
 figname = 'frei_appendix_Fig_18.svg'
 fig = plt.figure()
 # plt.plot(g2, "*")
-xax = (fs / (1000 * (len(wspec) - 1))) * np.arange(len(wspec))
+zeroToOne = np.linspace(0, 1, len(wspec))
+xax = (fs / 1000) * zeroToOne
+xaxRad = 2 * np.pi * zeroToOne
+b0 = 1.54
+a1 = 0.54
+pf = b0 * (1 + a1 * np.cos(xaxRad)) / (1 + 2 * a1 * np.cos(xaxRad) + a1**2)
+
 plt.semilogy(xax, wspec, "*")
+plt.semilogy(xax, xax[1] / xax)
+plt.semilogy(xax, wspec * pf, "*")
 plt.grid()
 # # markers at 20 kHz, fs - 20 kHz and fs
 plt.axvline(fs / (3 * rlen * 1000), color="b")
 plt.axvline(20, color="g")
 plt.axvline(fs / 1000 - 20, color="r")
 plt.axvline(fs / 1000, color="r")
+plt.title('Magnitude Spectrum')
+plt.xlabel('Frequency in kHz')
 fig.savefig('../figures/' + figname)
