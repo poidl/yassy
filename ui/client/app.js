@@ -1,17 +1,17 @@
-window.onload = function() {
+window.onload = function () {
 
   var but = document.getElementById('buttonsend');
   but.addEventListener('click', but_send, false);
 
   // var socket = new WebSocket('ws://echo.websocket.org');
   var socket = new WebSocket('ws://127.0.0.1:2794');
-  socket.onopen = function(event) {
+  socket.onopen = function (event) {
     console.log("conntection established ...")
     socket.send("hoitaus");
   };
-  socket.onmessage = function(event) {
+  socket.onmessage = function (event) {
     var message = event.data;
-    $( "#slider" ).slider( "value", message );
+    $("#slider").slider("value", message);
     console.log(message);
   };
 
@@ -20,14 +20,15 @@ window.onload = function() {
     console.log("clicked");
   }
 
-  $( function() {
-    $( "#slider" ).slider({
-      max: 1,
-      step: 0.001,
-      slide: function( event, ui ) {
-        console.log("sending: "+ui.value);
+  $(function () {
+    $("#slider").slider({
+      min: -60,
+      max: 0,
+      step: 0.5,
+      slide: function (event, ui) {
+        console.log("sending: " + ui.value);
         socket.send(ui.value);
       }
     });
-  } );
+  });
 };

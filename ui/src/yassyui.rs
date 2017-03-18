@@ -51,6 +51,7 @@ impl yassyui {
                    write_function: lv2::LV2UIWriteFunction,
                    controller: lv2::LV2UIController) {
         let tcplistener = TcpListener::bind("127.0.0.1:2794").unwrap();
+        println!("Yassy plugin is blocking onnecting ...");
         let result = tcplistener.accept();
         match result {
             Ok(s) => {
@@ -113,7 +114,7 @@ impl yassyui {
                 // following line works around calling on_ws_receive()
                 // with raw pointer (raw opinters are not "send")
                 // TODO: dangerous?
-                unsafe { 
+                unsafe {
                     let ctrl = &*(controller as *const i64);
 
                     // receive from browser
@@ -179,7 +180,7 @@ fn receive_loop(tx: mpsc::Sender<Message>,
                 rxws: &mut client::Receiver<WebSocketStream>,
                 write_function: lv2::LV2UIWriteFunction,
                 ctrl: &i64) {
-    // Loop over incoming ws messages               
+    // Loop over incoming ws messages
     for message in rxws.incoming_messages() {
 
         let message: Message = message.unwrap();
@@ -206,7 +207,7 @@ fn receive_loop(tx: mpsc::Sender<Message>,
                 let vecu8 = message.payload.into_owned();
                 let mess = String::from_utf8(vecu8).unwrap();
                 let myfloat = mess.parse::<f32>();
-                println!("Receive Loop: {:?}", myfloat);
+                // println!("Receive Loop: {:?}", myfloat);
                 match myfloat {
                     Ok(f) => {
                         on_ws_receive(write_function, ctrl, &f);
@@ -223,6 +224,6 @@ fn on_ws_receive(write: lv2::LV2UIWriteFunction, controller: &i64, f: &f32) {
     let ctrl = controller as *const i64 as lv2::LV2UIController;
     if let Some(ref func) = write {
         (*func)(ctrl, 2, 4, 0, f as *const f32 as *const libc::c_void);
-        println!("bla");
     }
+    println!("f: {}", f);
 }

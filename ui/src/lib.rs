@@ -82,9 +82,9 @@ impl Descriptor {
             let s: &str = str::from_utf8(buf).unwrap();
             // println!("   {}", s);
             if s == "http://lv2plug.in/ns/extensions/ui#idleInterface" {
-                return &idleinterface as *const lv2::LV2UIIdleInterface as *const libc::c_void;
+                return &IDLEINTERFACE as *const lv2::LV2UIIdleInterface as *const libc::c_void;
             } else if s == "http://lv2plug.in/ns/extensions/ui#showInterface" {
-                return &showinterface as *const lv2::LV2UIShowInterface as *const libc::c_void;
+                return &SHOWINTERFACE as *const lv2::LV2UIShowInterface as *const libc::c_void;
             }
 
             ptr::null() as *const libc::c_void
@@ -94,7 +94,7 @@ impl Descriptor {
 
 static SUI: &'static [u8] = b"http://example.org/yassyui#ui\0";
 
-static mut descUI: lv2::LV2UIDescriptor = lv2::LV2UIDescriptor {
+static mut DESC_UI: lv2::LV2UIDescriptor = lv2::LV2UIDescriptor {
     uri: 0 as *const libc::c_char, // ptr::null() isn't const fn (yet)
     instantiate: Descriptor::instantiate,
     cleanup: Descriptor::cleanup,
@@ -104,7 +104,7 @@ static mut descUI: lv2::LV2UIDescriptor = lv2::LV2UIDescriptor {
 
 static SKX: &'static [u8] = b"http://example.org/yassyui#kx\0";
 
-static mut descKX: lv2::LV2UIDescriptor = lv2::LV2UIDescriptor {
+static mut DESC_KX: lv2::LV2UIDescriptor = lv2::LV2UIDescriptor {
     uri: 0 as *const libc::c_char, // ptr::null() isn't const fn (yet)
     instantiate: Descriptor::instantiate,
     cleanup: Descriptor::cleanup,
@@ -112,8 +112,8 @@ static mut descKX: lv2::LV2UIDescriptor = lv2::LV2UIDescriptor {
     extension_data: None,
 };
 
-static mut idleinterface: lv2::LV2UIIdleInterface = lv2::LV2UIIdleInterface { idle: ui_idle };
-static mut showinterface: lv2::LV2UIShowInterface = lv2::LV2UIShowInterface {
+static mut IDLEINTERFACE: lv2::LV2UIIdleInterface = lv2::LV2UIIdleInterface { idle: ui_idle };
+static mut SHOWINTERFACE: lv2::LV2UIShowInterface = lv2::LV2UIShowInterface {
     show: ui_show,
     hide: ui_hide,
 };
@@ -133,13 +133,13 @@ pub extern "C" fn lv2ui_descriptor(index: i32) -> *const lv2::LV2UIDescriptor {
         match index {
             0 => {
                 ptr = SUI.as_ptr() as *const libc::c_char;
-                descUI.uri = ptr;
-                return &descUI as *const lv2::LV2UIDescriptor;
+                DESC_UI.uri = ptr;
+                return &DESC_UI as *const lv2::LV2UIDescriptor;
             }
             1 => {
                 ptr = SKX.as_ptr() as *const libc::c_char;
-                descKX.uri = ptr;
-                return &descKX as *const lv2::LV2UIDescriptor;
+                DESC_KX.uri = ptr;
+                return &DESC_KX as *const lv2::LV2UIDescriptor;
             }
             _ => return std::ptr::null(),
         }
