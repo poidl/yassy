@@ -62,7 +62,7 @@ impl yassyui {
                    write_function: lv2::LV2UIWriteFunction,
                    controller: lv2::LV2UIController) {
         let tcplistener = TcpListener::bind("127.0.0.1:2794").unwrap();
-        println!("Yassy plugin is blocking  ...");
+        println!("Yassy plugin is blocking. To connect, open the file ui/client/yassyclient.html with a web browser.");
         let result = tcplistener.accept();
         match result {
             Ok(s) => {

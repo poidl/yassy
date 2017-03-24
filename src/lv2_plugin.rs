@@ -1,17 +1,10 @@
-#![allow(unused_imports)]
-#![allow(dead_code)]
-#![allow(unused_variables)]
-#![allow(non_snake_case)]
-
 extern crate libc;
 extern crate lv2;
-use std::ffi::CStr;
 use std::ffi::CString;
 use std::ptr;
 use plugin;
 use midi;
 use midi::*;
-use plugin::*;
 use std::str;
 
 pub struct Synthuris {

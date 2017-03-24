@@ -1,17 +1,6 @@
-#![allow(unused_imports)]
-#![allow(dead_code)]
-#![allow(unused_variables)]
-#![allow(non_snake_case)]
-
 extern crate libc;
 
-use std::ffi::CString;
 use synth;
-
-use midi;
-use midi::*;
-use synth::*;
-use oscillator::Oscillator;
 
 // Number of parameters
 const NPARAMS: usize = 3;
@@ -31,7 +20,6 @@ pub struct SynthPlugin {
     pub midi_in: *const u8,
     pub audio_out: *mut f32,
     pub synth: synth::Synth,
-    fs: f64,
     pub params: [*mut f32; NPARAMS],
 }
 
@@ -41,7 +29,6 @@ impl SynthPlugin {
             midi_in: &0u8,
             audio_out: &mut 0f32,
             synth: synth::Synth::new(),
-            fs: 0f64,
             params: [&mut 0.5f32, &mut 1f32, &mut 1f32],
         };
         if synth.params.len() != NPARAMS {
@@ -63,8 +50,8 @@ impl SynthPlugin {
             let g = *(self.params[ParamName::Gain as usize]);
             let p1 = *(self.params[ParamName::BLIT as usize]);
             let p2 = *(self.params[ParamName::Postfilter as usize]);
-            self.synth.voice.osc1.use_blit = toBool(p1);
-            self.synth.voice.osc1.use_postfilter = toBool(p2);
+            self.synth.voice.osc1.use_blit = to_bool(p1);
+            self.synth.voice.osc1.use_postfilter = to_bool(p2);
             // println!("USE BLIT: {}", self.synth.voice.osc1.use_blit);
             (10f32).powf(g / 20f32) * self.synth.get_amp()
             // self.synth.get_amp()
@@ -75,12 +62,12 @@ impl SynthPlugin {
     }
 }
 
-pub fn toI8(paramval: f32) -> i8 {
+pub fn to_i8(paramval: f32) -> i8 {
     // let half = 127f32/2f32;
     paramval.round() as i8
 }
 
-pub fn toBool(paramval: f32) -> bool {
+pub fn to_bool(paramval: f32) -> bool {
     // let half = 127f32/2f32;
     if paramval < 0.5f32 {
         return false;
