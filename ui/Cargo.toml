@@ -8,6 +8,7 @@ authors = ["poidl <hoitaus@gmail.com>"]
 libc = "*"
 lv2 = { path = "../../lv2" }
 websocket = "*"
+rustc-serialize = "*"
 
 [lib]
 name = "yassyui"

@@ -11,8 +11,9 @@ window.onload = function () {
   };
   socket.onmessage = function (event) {
     var message = event.data;
-    $("#slider").slider("value", message);
-    console.log(message);
+    var param = JSON.parse(message)
+    $("#slider").slider("value", param.value);
+    console.log(param);
   };
 
   function but_send() {
@@ -27,7 +28,11 @@ window.onload = function () {
       step: 0.5,
       slide: function (event, ui) {
         console.log("sending: " + ui.value);
-        socket.send(ui.value);
+        var param = {
+          key: 2,
+          value: ui.value
+        };
+        socket.send(JSON.stringify(param));
       }
     });
   });

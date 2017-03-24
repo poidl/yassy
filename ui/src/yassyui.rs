@@ -13,6 +13,17 @@ use websocket::stream::WebSocketStream;
 use std::io::{Read, Write};
 use std::net::TcpListener;
 
+use rustc_serialize::json;
+
+// Automatically generate `RustcDecodable` and `RustcEncodable` trait
+// implementations
+#[derive(RustcDecodable, RustcEncodable)]
+pub struct Param {
+    pub key: u32,
+    pub value: f32,
+}
+
+
 #[repr(C)]
 pub struct yassyui {
     pub host: *const lv2::LV2UIExternalUIHost,
@@ -20,8 +31,8 @@ pub struct yassyui {
     pub write: lv2::LV2UIWriteFunction,
     pub extwidget: lv2::LV2UIExternalUIWidget,
     pub showing: bool,
-    pub sender: mpsc::Sender<f32>,
-    pub receiver: mpsc::Receiver<f32>,
+    pub sender: mpsc::Sender<Param>,
+    pub receiver: mpsc::Receiver<Param>,
 }
 
 impl yassyui {
@@ -51,7 +62,7 @@ impl yassyui {
                    write_function: lv2::LV2UIWriteFunction,
                    controller: lv2::LV2UIController) {
         let tcplistener = TcpListener::bind("127.0.0.1:2794").unwrap();
-        println!("Yassy plugin is blocking onnecting ...");
+        println!("Yassy plugin is blocking  ...");
         let result = tcplistener.accept();
         match result {
             Ok(s) => {
@@ -128,17 +139,19 @@ impl yassyui {
     }
 }
 
-fn param_as_message_to_sendloop(tx: mpsc::Sender<Message>, rx: mpsc::Receiver<f32>) {
+fn param_as_message_to_sendloop(tx: mpsc::Sender<Message>, rx: mpsc::Receiver<Param>) {
     loop {
-        let val: f32 = match rx.recv() {
+        let param: Param = match rx.recv() {
             Ok(v) => v,
             Err(e) => {
                 println!("Oeha: {:?}", e);
                 return;
             }
         };
-        println!("val: {}", val);
-        let message: Message = Message::text(val.to_string());
+        println!("param.key: {}", param.key);
+        println!("param.value: {}", param.value);
+        let encoded = json::encode(&param).unwrap();
+        let message: Message = Message::text(encoded);
         tx.send(message).unwrap();
     }
 }
@@ -156,8 +169,8 @@ fn send_loop(txws: &mut client::Sender<WebSocketStream>, rx: mpsc::Receiver<Mess
         };
         match message.opcode {
             Type::Close => {
-                let _ = txws.send_message(&message);
                 // If it's a close message, just send it and then return.
+                let _ = txws.send_message(&message);
                 return;
             }
             _ => (),
@@ -175,7 +188,6 @@ fn send_loop(txws: &mut client::Sender<WebSocketStream>, rx: mpsc::Receiver<Mess
 }
 
 // Receive from browser
-
 fn receive_loop(tx: mpsc::Sender<Message>,
                 rxws: &mut client::Receiver<WebSocketStream>,
                 write_function: lv2::LV2UIWriteFunction,
@@ -186,7 +198,7 @@ fn receive_loop(tx: mpsc::Sender<Message>,
         let message: Message = message.unwrap();
 
         match message.opcode {
-            // TODO: is this necessary?
+            // TODO: do the right thing here
             Type::Close => {
                 // Got a close message, so send a close message and return
                 let _ = tx.send(Message::close());
@@ -206,11 +218,13 @@ fn receive_loop(tx: mpsc::Sender<Message>,
             _ => {
                 let vecu8 = message.payload.into_owned();
                 let mess = String::from_utf8(vecu8).unwrap();
-                let myfloat = mess.parse::<f32>();
+                println!("message: {}", mess);
+                let res = json::decode(&mess);
+                // let myfloat = mess.parse::<f32>();
                 // println!("Receive Loop: {:?}", myfloat);
-                match myfloat {
-                    Ok(f) => {
-                        on_ws_receive(write_function, ctrl, &f);
+                match res {
+                    Ok(param) => {
+                        on_ws_receive(write_function, ctrl, &param);
                     }
                     Err(err) => println!("Err: {}", err),
                 }
@@ -219,11 +233,11 @@ fn receive_loop(tx: mpsc::Sender<Message>,
     }
 }
 
-fn on_ws_receive(write: lv2::LV2UIWriteFunction, controller: &i64, f: &f32) {
+fn on_ws_receive(write: lv2::LV2UIWriteFunction, controller: &i64, param: &Param) {
 
     let ctrl = controller as *const i64 as lv2::LV2UIController;
     if let Some(ref func) = write {
-        (*func)(ctrl, 2, 4, 0, f as *const f32 as *const libc::c_void);
+        (*func)(ctrl, param.key, 4, 0, &param.value as &f32 as *const f32 as *const libc::c_void);
     }
-    println!("f: {}", f);
+    // println!("f: {}", f);
 }

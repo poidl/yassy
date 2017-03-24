@@ -1,6 +1,7 @@
 extern crate libc;
 extern crate lv2;
 extern crate websocket;
+extern crate rustc_serialize;
 
 mod yassyui;
 use std::mem;
@@ -70,7 +71,8 @@ impl Descriptor {
             let hoit = *(buffer as *const libc::c_float);
             println!("  buffer: {}", hoit);
             let yas = ui as *mut yassyui::yassyui;
-            (*yas).sender.send(hoit as f32).unwrap();
+            let param = yassyui::Param{key: port_index, value: hoit as f32};
+            (*yas).sender.send(param).unwrap();
         }
 
     }
@@ -190,7 +192,7 @@ pub extern "C" fn ui_hide(handle: lv2::LV2UIHandle) -> libc::c_int {
 pub extern "C" fn kx_run(exthandle: *const lv2::LV2UIExternalUIWidget) {
     // Host calls this function regulary. UI library implementing the
     // callback may do IPC or redraw the UI.
-    println!("host calls kx_run()");
+    // println!("host calls kx_run()");
     let offset = get_offset();
     unsafe {
         let uihandle = (exthandle as lv2::LV2UIHandle).offset(offset);
