@@ -58,18 +58,6 @@ impl yassyui {
         ui
     }
 
-    // port_event() is part of the "main thread"
-    // Each UI instance has a
-    // Two threads are spawned:
-
-    // Connecting channel:
-    // THREAD 1:    param_as_message_to_sendloop()
-    //
-    //    Host----------->UI-------------------------------------->Browser
-    // *) Host calls port_event()
-    // *) port_event() calls yassyui.sender.send(Param), which INs Param to param_as_message_to_sendloop(IN,OUT)
-    // *) param_as_message_to_sendloop() encodes Param as JSON and sends it  to the browser via websocket
-    //
     pub fn connect(&mut self,
                    write_function: lv2::LV2UIWriteFunction,
                    controller: lv2::LV2UIController) {
