@@ -127,9 +127,8 @@ fn param_as_message_to_sendloop(controller: lv2::LV2UIController,
                                 write_function: lv2::LV2UIWriteFunction,
                                 rx: mpsc::Receiver<Param>) {
 
-    let tcplistener = TcpListener::bind("127.0.0.1:2794").unwrap();
-    println!("Yassy plugin is blocking. To connect, open the file ui/client/yassyclient.html \
-              with a web browser.");
+    let tcplistener = TcpListener::bind("127.0.0.1:0").unwrap();
+    println!("UI listening at {}.", tcplistener.local_addr().unwrap());
     let result = tcplistener.accept();
     match result {
         Ok(s) => {
