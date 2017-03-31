@@ -49,7 +49,7 @@ impl yassyui {
                 hide: None,
             },
             host: ptr::null(),
-            controller: ptr::null(),
+            controller: lv2::LV2UIController(ptr::null()),
             write: None,
             showing: false,
             sender: tx,
@@ -59,12 +59,12 @@ impl yassyui {
     }
 
     // port_event() is part of the "main thread"
-    // Each UI instance has a 
+    // Each UI instance has a
     // Two threads are spawned:
 
-    // Connecting channel: 
+    // Connecting channel:
     // THREAD 1:    param_as_message_to_sendloop()
-    //           
+    //
     //    Host----------->UI-------------------------------------->Browser
     // *) Host calls port_event()
     // *) port_event() calls yassyui.sender.send(Param), which INs Param to param_as_message_to_sendloop(IN,OUT)
@@ -73,47 +73,26 @@ impl yassyui {
     pub fn connect(&mut self,
                    write_function: lv2::LV2UIWriteFunction,
                    controller: lv2::LV2UIController) {
-        let tcplistener = TcpListener::bind("127.0.0.1:2794").unwrap();
-        println!("Yassy plugin is blocking. To connect, open the file ui/client/yassyclient.html with a web browser.");
-        let result = tcplistener.accept();
-        match result {
-            Ok(s) => {
-                let (mut sender, mut receiver) = client_split(s.0);
- 
-                let (tx_hostin, rx_hostin) = mpsc::channel();
-                self.sender = tx_hostin;
 
+        // channel connecting the ui thread with the sending thread
+        let (tx_hostin, rx_hostin) = mpsc::channel();
+        self.sender = tx_hostin;
 
-                // receive parameter values, translate it to a Message and send to
-                // send_loop
-                thread::spawn(move || param_as_message_to_sendloop(&mut sender, rx_hostin));
+        // let ctrl = &*(controller as *const i64);
 
-                // send to browser
-                // thread::spawn(move || send_loop(&mut sender, rx_wsout));
+        thread::spawn(move || {
+            param_as_message_to_sendloop(controller, write_function, rx_hostin)
+        });
 
-                // following line works around calling on_ws_receive()
-                // with raw pointer (raw opinters are not "send")
-                // TODO: dangerous?
-                unsafe {
-                    let ctrl = &*(controller as *const i64);
-
-                    // receive from browser
-                    thread::spawn(move || {
-                        receive_loop( &mut receiver, write_function, ctrl)
-                    });
-                }
-            }
-            _ => println!("error"),
-        };
     }
 }
 
-fn client_split(s: TcpStream) -> (client::Sender<WebSocketStream>, client::Receiver<WebSocketStream>) {
+fn client_split(s: TcpStream)
+                -> (client::Sender<WebSocketStream>, client::Receiver<WebSocketStream>) {
     let tcpstream = s;
     let wsstream = WebSocketStream::Tcp(tcpstream);
     pub struct Connection<R: Read, W: Write>(R, W);
-    let connection = Connection(wsstream.try_clone().unwrap(),
-                                wsstream.try_clone().unwrap());
+    let connection = Connection(wsstream.try_clone().unwrap(), wsstream.try_clone().unwrap());
 
     let request = Request::read(connection.0, connection.1).unwrap();
     let headers = request.headers.clone(); // Keep the headers so we can check them
@@ -144,37 +123,70 @@ fn client_split(s: TcpStream) -> (client::Sender<WebSocketStream>, client::Recei
     client.split()
 }
 
-fn param_as_message_to_sendloop(txws: &mut client::Sender<WebSocketStream>, rx: mpsc::Receiver<Param>) {
-    loop {
-        let param: Param = match rx.recv() {
-            Ok(v) => v,
-            Err(e) => {
-                println!("Oeha: {:?}", e);
-                return;
-            }
-        };
-        println!("param.key: {}", param.key);
-        println!("param.value: {}", param.value);
-        let encoded = json::encode(&param).unwrap();
-        let message: Message = Message::text(encoded);
+fn param_as_message_to_sendloop(controller: lv2::LV2UIController,
+                                write_function: lv2::LV2UIWriteFunction,
+                                rx: mpsc::Receiver<Param>) {
 
-        // tx.send(message).unwrap();
-        // Send the message
-        match txws.send_message(&message) {
-            Ok(()) => (),
-            Err(e) => {
-                println!("Send Loop: {:?}", e);
-                let _ = txws.send_message(&Message::close());
-                return;
+    let tcplistener = TcpListener::bind("127.0.0.1:2794").unwrap();
+    println!("Yassy plugin is blocking. To connect, open the file ui/client/yassyclient.html \
+              with a web browser.");
+    let result = tcplistener.accept();
+    match result {
+        Ok(s) => {
+            let (mut sender, mut receiver) = client_split(s.0);
+
+
+
+            // receive parameter values, translate it to a Message and send to
+            // send_loop
+
+            // send to browser
+            // thread::spawn(move || send_loop(&mut sender, rx_wsout));
+
+            // following line works around calling on_ws_receive()
+            // with raw pointer (raw opinters are not "send")
+            // TODO: dangerous?
+
+
+
+            // receive from browser
+            thread::spawn(move || receive_loop(&mut receiver, write_function, controller));
+        
+            loop {
+                let param: Param = match rx.recv() {
+                    Ok(v) => v,
+                    Err(e) => {
+                        println!("Oeha: {:?}", e);
+                        return;
+                    }
+                };
+                println!("param.key: {}", param.key);
+                println!("param.value: {}", param.value);
+                let encoded = json::encode(&param).unwrap();
+                let message: Message = Message::text(encoded);
+
+                // tx.send(message).unwrap();
+                // Send the message
+                match sender.send_message(&message) {
+                    Ok(()) => (),
+                    Err(e) => {
+                        println!("Send Loop: {:?}", e);
+                        let _ = sender.send_message(&Message::close());
+                        return;
+                    }
+                }
             }
         }
-    }
+        _ => println!("error"),
+    };
+
 }
+
 
 // Receive from browser
 fn receive_loop(rxws: &mut client::Receiver<WebSocketStream>,
                 write_function: lv2::LV2UIWriteFunction,
-                ctrl: &i64) {
+                controller: lv2::LV2UIController) {
     // Loop over incoming ws messages
     for message in rxws.incoming_messages() {
 
@@ -185,18 +197,22 @@ fn receive_loop(rxws: &mut client::Receiver<WebSocketStream>,
         let res = json::decode(&mess);
         match res {
             Ok(param) => {
-                on_ws_receive(write_function, ctrl, &param);
+                on_ws_receive(write_function, controller, &param);
             }
             Err(err) => println!("Err: {}", err),
         }
     }
 }
 
-fn on_ws_receive(write: lv2::LV2UIWriteFunction, controller: &i64, param: &Param) {
+fn on_ws_receive(write: lv2::LV2UIWriteFunction, controller: lv2::LV2UIController, param: &Param) {
 
-    let ctrl = controller as *const i64 as lv2::LV2UIController;
+    // let ctrl = controller as *const i64 as lv2::LV2UIController;
     if let Some(ref func) = write {
-        (*func)(ctrl, param.key, 4, 0, &param.value as &f32 as *const f32 as *const libc::c_void);
+        (*func)(controller,
+                param.key,
+                4,
+                0,
+                &param.value as &f32 as *const f32 as *const libc::c_void);
     }
     // println!("f: {}", f);
 }
