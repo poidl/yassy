@@ -262,10 +262,14 @@ pub extern "C" fn kx_run(exthandle: *const lv2::LV2UIExternalUIWidget) {
         let uihandle = (exthandle as lv2::LV2UIHandle).offset(offset);
         let ui = uihandle as *mut yassyui::yassyui;
         if ui_idle(uihandle) == 1i32 {
+
             // ui_closed: Callback that plugin UI will call when UI (GUI window) is closed by user.
             // This callback will be called during execution of LV2_External_UI_Widget::run()
             // (i.e. not from background thread).
-            ((*(*ui).host).ui_closed)((*ui).controller);
+
+            // destructure tuple struct to access lv2_raw::LV2UIControllerRaw
+            let controller_raw = (*ui).controller.0;
+            ((*(*ui).host).ui_closed)(controller_raw);
             ui_hide(uihandle);
         }
     }
