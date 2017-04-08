@@ -12,6 +12,7 @@ pub mod plugin;
 use std::ptr;
 use std::mem;
 
+
 // have to define new type. Otherwise error: "cannot define inherent impl for a type outside of the crate where the type is defined; define and implement a trait or new type instead"
 struct Descriptor(lv2::LV2Descriptor);
 
@@ -48,7 +49,7 @@ impl Descriptor {
             let seq = (*synth).in_port;
             let output = (*synth).output;
             // pointer to 1st event body
-            let mut ev: *const lv2::Lv2AtomEvent = lv2::lv2_atom_sequence_begin(&(*seq).body);
+            let mut ev: *const lv2::LV2AtomEvent = lv2::lv2_atom_sequence_begin(&(*seq).body);
 
             let mut mq = false; // midi is queued
             let mut ievent = 0;
