@@ -123,8 +123,7 @@ fn param_as_message_to_sendloop(controller: lv2::LV2UIController,
             let (mut sender, mut receiver) = client_split(s.0);
 
 
-
-            // receive parameter values, translate it to a Message and send to
+            // receive parameter value, translate it to a Message and send to
             // send_loop
 
             // send to browser
@@ -138,7 +137,7 @@ fn param_as_message_to_sendloop(controller: lv2::LV2UIController,
 
             // receive from browser
             thread::spawn(move || receive_loop(&mut receiver, write_function, controller));
-        
+
             loop {
                 let param: Param = match rx.recv() {
                     Ok(v) => v,
