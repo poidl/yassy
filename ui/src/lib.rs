@@ -13,18 +13,6 @@ use std::mem;
 use std::ffi::CStr;
 use std::str;
 use std::ptr;
-use websocket::{Message, Sender};
-use rustc_serialize::json;
-use std::net::TcpStream;
-// use websocket::server::request::Request;
-// use websocket::client;
-// use websocket::header::WebSocketProtocol;
-// use websocket::stream::WebSocketStream;
-// use std::io::{Read, Write};
-// use std::net::TcpListener;
-use websocket::client::request::Url;
-use websocket::Client;
-use std::thread;
 
 // Credits to Hanspeter Portner for explaining how ui:UI and kx:Widget work. See
 // http://lists.lv2plug.in/pipermail/devel-lv2plug.in/2016-May/001649.html
@@ -45,38 +33,7 @@ impl Descriptor {
                                   -> lv2::LV2UIHandle {
         println!("host calls instantiate()");
         lv2::print_features(features);
-        
-
-	let url = Url::parse("ws://127.0.0.1:2794").unwrap();
-	println!("Connecting to {}", url);
-	let request = Client::connect(url).unwrap();
-	let response = request.send().unwrap(); // Send the request and retrieve a response
-	println!("Validating response...");
-	response.validate().unwrap(); // Validate the response
-	println!("Successfully connected");
-	let (sender, mut receiver) = response.begin().split();
-
-
-
-
-        let ui = yassyui::yassyui {
-            extwidget: lv2::LV2UIExternalUIWidget {
-                // Why "None"? Nullable function pointers. See
-                // https://doc.rust-lang.org/book/ffi.html
-                // https://mail.mozilla.org/pipermail/rust-dev/2014-September/011200.html
-                run: None,
-                show: None,
-                hide: None,
-            },
-            host: ptr::null(),
-            controller: lv2::LV2UIController(ptr::null()),
-            write: None,
-            showing: false,
-            sender: sender
-        };
-
-        
-        let mut bx = Box::new(ui);
+        let mut bx = Box::new(yassyui::yassyui::new());
 
         bx.controller = controller;
         bx.write = write_function;
@@ -97,11 +54,8 @@ impl Descriptor {
                 *widget = &mut bx.extwidget as *mut lv2::LV2UIExternalUIWidget as lv2::LV2UIWidget
             }
         }
- println!("ble");
-            // receive from server
-            thread::spawn(move || yassyui::receive_loop(&mut receiver, write_function, controller));
-             println!("blo");
-        // bx.connect(write_function, controller);
+
+        bx.connect(write_function, controller);
         let ptr = (&*bx as *const yassyui::yassyui) as *mut libc::c_void;
         mem::forget(bx);
         ptr
@@ -123,20 +77,7 @@ impl Descriptor {
             println!("  buffer: {}", hoit);
             let yas = ui as *mut yassyui::yassyui;
             let param = yassyui::Param{key: port_index, value: hoit as f32};
-            let encoded = json::encode(&param).unwrap();
-            let message: Message = Message::text(encoded);
-
-            // tx.send(message).unwrap();
-            // Send the message
-            match (*yas).sender.send_message(&message) {
-                Ok(()) => (),
-                Err(e) => {
-                    println!("Send Loop: {:?}", e);
-                    let _ = (*yas).sender.send_message(&Message::close());
-                    return;
-                }
-            }
-            // (*yas).sender.send(param).unwrap();
+            (*yas).sender.send(param).unwrap();
         }
 
     }
@@ -298,9 +239,8 @@ fn get_offset() -> isize {
     // needed for in the kx_* functions. AFAIK the only way to avoid this
     // would be to make sure that extwidget is always the *first* member of
     // yassyui, in which case the offset is zero
-    // let ya = yassyui::yassyui::new();
-    // let uiptr = &ya as *const yassyui::yassyui as isize;
-    // let extptr = &ya.extwidget as *const lv2::LV2UIExternalUIWidget as isize;
-    // uiptr - extptr
-    0 as isize
+    let ya = yassyui::yassyui::new();
+    let uiptr = &ya as *const yassyui::yassyui as isize;
+    let extptr = &ya.extwidget as *const lv2::LV2UIExternalUIWidget as isize;
+    uiptr - extptr
 }

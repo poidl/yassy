@@ -1,16 +1,16 @@
 use libc;
 use lv2;
-// use std::ptr;
-// use std::thread;
-// use std::sync::mpsc;
-use websocket::{Message, Receiver};
+use std::ptr;
+use std::thread;
+use std::sync::mpsc;
+use websocket::{Message, Sender, Receiver};
 
 use websocket::server::request::Request;
 use websocket::client;
 use websocket::header::WebSocketProtocol;
 use websocket::stream::WebSocketStream;
 use std::io::{Read, Write};
-// use std::net::TcpListener;
+use std::net::TcpListener;
 use std::net::TcpStream;
 
 use rustc_serialize::json;
@@ -26,59 +26,56 @@ pub struct Param {
 
 #[repr(C)]
 pub struct yassyui {
-    // lv2::LV2UIExternalUIWidge MUST be first member! See comment in get_offset()
-    pub extwidget: lv2::LV2UIExternalUIWidget,
     pub host: *const lv2::LV2UIExternalUIHost,
     pub controller: lv2::LV2UIController,
     pub write: lv2::LV2UIWriteFunction,
+    pub extwidget: lv2::LV2UIExternalUIWidget,
     pub showing: bool,
-    pub sender: client::Sender<WebSocketStream>,
+    pub sender: mpsc::Sender<Param>,
+    pub receiver: mpsc::Receiver<Param>,
 }
 
-// impl yassyui {
-    // pub fn new() -> yassyui {
-    //     // println!("address: {}", ipaddr);
-    //     let tcpstream = TcpStream::connect("127.0.0.1:55555").unwrap();
-    //     let (sender, receiver) = client_split(tcpstream);
-    //     let ui = yassyui {
-    //         extwidget: lv2::LV2UIExternalUIWidget {
-    //             // Why "None"? Nullable function pointers. See
-    //             // https://doc.rust-lang.org/book/ffi.html
-    //             // https://mail.mozilla.org/pipermail/rust-dev/2014-September/011200.html
-    //             run: None,
-    //             show: None,
-    //             hide: None,
-    //         },
-    //         host: ptr::null(),
-    //         controller: lv2::LV2UIController(ptr::null()),
-    //         write: None,
-    //         showing: false,
-    //         sender: client::Sender::new(TcpStream, false)
-    //     };
+impl yassyui {
+    pub fn new() -> yassyui {
+        // println!("address: {}", ipaddr);
+        let (tx, rx) = mpsc::channel();
+        let ui = yassyui {
+            extwidget: lv2::LV2UIExternalUIWidget {
+                // Why "None"? Nullable function pointers. See
+                // https://doc.rust-lang.org/book/ffi.html
+                // https://mail.mozilla.org/pipermail/rust-dev/2014-September/011200.html
+                run: None,
+                show: None,
+                hide: None,
+            },
+            host: ptr::null(),
+            controller: lv2::LV2UIController(ptr::null()),
+            write: None,
+            showing: false,
+            sender: tx,
+            receiver: rx,
+        };
+        ui
+    }
 
-        
-    //     ui
-    // }
+    pub fn connect(&mut self,
+                   write_function: lv2::LV2UIWriteFunction,
+                   controller: lv2::LV2UIController) {
 
-//     pub fn connect(&mut self,
-//                     write_function: lv2::LV2UIWriteFunction,
-//                     controller: lv2::LV2UIController) {
+        // channel connecting the ui thread with the sending thread
+        let (tx_hostin, rx_hostin) = mpsc::channel();
+        self.sender = tx_hostin;
 
+        // let ctrl = &*(controller as *const i64);
 
-//     //     // channel connecting the ui thread with the sending thread
-//     //     let (tx_hostin, rx_hostin) = mpsc::channel();
-//     //     self.sender = tx_hostin;
+        thread::spawn(move || {
+            param_as_message_to_sendloop(controller, write_function, rx_hostin)
+        });
 
-//     //     // let ctrl = &*(controller as *const i64);
+    }
+}
 
-//     //     thread::spawn(move || {
-//     //         param_as_message_to_sendloop(controller, write_function, rx_hostin)
-//     //     });
-
-//     }
-// }
-
-pub fn client_split(s: TcpStream)
+fn client_split(s: TcpStream)
                 -> (client::Sender<WebSocketStream>, client::Receiver<WebSocketStream>) {
     let tcpstream = s;
     let wsstream = WebSocketStream::Tcp(tcpstream);
@@ -114,67 +111,67 @@ pub fn client_split(s: TcpStream)
     client.split()
 }
 
-// fn param_as_message_to_sendloop(controller: lv2::LV2UIController,
-//                                 write_function: lv2::LV2UIWriteFunction,
-//                                 rx: mpsc::Receiver<Param>) {
+fn param_as_message_to_sendloop(controller: lv2::LV2UIController,
+                                write_function: lv2::LV2UIWriteFunction,
+                                rx: mpsc::Receiver<Param>) {
 
-//     let tcplistener = TcpListener::bind("127.0.0.1:0").unwrap();
-//     println!("UI listening at {}.", tcplistener.local_addr().unwrap());
-//     let result = tcplistener.accept();
-//     match result {
-//         Ok(s) => {
-//             let (mut sender, mut receiver) = client_split(s.0);
-
-
-
-//             // receive parameter values, translate it to a Message and send to
-//             // send_loop
-
-//             // send to browser
-//             // thread::spawn(move || send_loop(&mut sender, rx_wsout));
-
-//             // following line works around calling on_ws_receive()
-//             // with raw pointer (raw opinters are not "send")
-//             // TODO: dangerous?
+    let tcplistener = TcpListener::bind("127.0.0.1:0").unwrap();
+    println!("UI listening at {}.", tcplistener.local_addr().unwrap());
+    let result = tcplistener.accept();
+    match result {
+        Ok(s) => {
+            let (mut sender, mut receiver) = client_split(s.0);
 
 
 
-//             // receive from browser
-//             thread::spawn(move || receive_loop(&mut receiver, write_function, controller));
+            // receive parameter values, translate it to a Message and send to
+            // send_loop
+
+            // send to browser
+            // thread::spawn(move || send_loop(&mut sender, rx_wsout));
+
+            // following line works around calling on_ws_receive()
+            // with raw pointer (raw opinters are not "send")
+            // TODO: dangerous?
+
+
+
+            // receive from browser
+            thread::spawn(move || receive_loop(&mut receiver, write_function, controller));
         
-//             loop {
-//                 let param: Param = match rx.recv() {
-//                     Ok(v) => v,
-//                     Err(e) => {
-//                         println!("Oeha: {:?}", e);
-//                         return;
-//                     }
-//                 };
-//                 println!("param.key: {}", param.key);
-//                 println!("param.value: {}", param.value);
-//                 let encoded = json::encode(&param).unwrap();
-//                 let message: Message = Message::text(encoded);
+            loop {
+                let param: Param = match rx.recv() {
+                    Ok(v) => v,
+                    Err(e) => {
+                        println!("Oeha: {:?}", e);
+                        return;
+                    }
+                };
+                println!("param.key: {}", param.key);
+                println!("param.value: {}", param.value);
+                let encoded = json::encode(&param).unwrap();
+                let message: Message = Message::text(encoded);
 
-//                 // tx.send(message).unwrap();
-//                 // Send the message
-//                 match sender.send_message(&message) {
-//                     Ok(()) => (),
-//                     Err(e) => {
-//                         println!("Send Loop: {:?}", e);
-//                         let _ = sender.send_message(&Message::close());
-//                         return;
-//                     }
-//                 }
-//             }
-//         }
-//         _ => println!("error"),
-//     };
+                // tx.send(message).unwrap();
+                // Send the message
+                match sender.send_message(&message) {
+                    Ok(()) => (),
+                    Err(e) => {
+                        println!("Send Loop: {:?}", e);
+                        let _ = sender.send_message(&Message::close());
+                        return;
+                    }
+                }
+            }
+        }
+        _ => println!("error"),
+    };
 
-// }
+}
 
 
 // Receive from browser
-pub fn receive_loop(rxws: &mut client::Receiver<WebSocketStream>,
+fn receive_loop(rxws: &mut client::Receiver<WebSocketStream>,
                 write_function: lv2::LV2UIWriteFunction,
                 controller: lv2::LV2UIController) {
     // Loop over incoming ws messages
@@ -204,4 +201,5 @@ fn on_ws_receive(write: lv2::LV2UIWriteFunction, controller: lv2::LV2UIControlle
                 0,
                 &param.value as &f32 as *const f32 as *const libc::c_void);
     }
+    // println!("f: {}", f);
 }
