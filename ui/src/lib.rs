@@ -13,7 +13,8 @@ use std::mem;
 use std::ffi::CStr;
 use std::str;
 use std::ptr;
-
+use rustc_serialize::json;
+use websocket::{Message, Sender, Receiver};
 // Credits to Hanspeter Portner for explaining how ui:UI and kx:Widget work. See
 // http://lists.lv2plug.in/pipermail/devel-lv2plug.in/2016-May/001649.html
 
@@ -55,7 +56,6 @@ impl Descriptor {
             }
         }
 
-        bx.connect(write_function, controller);
         let ptr = (&*bx as *const yassyui::yassyui) as *mut libc::c_void;
         mem::forget(bx);
         ptr
@@ -76,8 +76,20 @@ impl Descriptor {
             let hoit = *(buffer as *const libc::c_float);
             println!("  buffer: {}", hoit);
             let yas = ui as *mut yassyui::yassyui;
-            let param = yassyui::Param{key: port_index, value: hoit as f32};
-            (*yas).sender.send(param).unwrap();
+            if (*yas).connected {
+                let param = yassyui::Param{key: port_index, value: hoit as f32};
+                let encoded = json::encode(&param).unwrap();
+                let message: Message = Message::text(encoded);
+
+                match (*yas).sender.send_message(&message) {
+                    Ok(()) => (),
+                    Err(e) => {
+                        println!("Send Loop: {:?}", e);
+                        let _ = (*yas).sender.send_message(&Message::close());
+                        return;
+                    }
+                }
+            }
         }
 
     }
@@ -87,7 +99,6 @@ impl Descriptor {
             // println!("Host calls extension_data:");
             let buf = CStr::from_ptr(uri).to_bytes();
             let s: &str = str::from_utf8(buf).unwrap();
-            // println!("   {}", s);
             if s == "http://lv2plug.in/ns/extensions/ui#idleInterface" {
                 return &IDLEINTERFACE as *const lv2::LV2UIIdleInterface as *const libc::c_void;
             } else if s == "http://lv2plug.in/ns/extensions/ui#showInterface" {
@@ -161,6 +172,52 @@ pub extern "C" fn ui_idle(handle: lv2::LV2UIHandle) -> libc::c_int {
     // println!("host calls idle()");
     let ui = handle as *mut yassyui::yassyui;
     unsafe {
+        let result = (*ui).tcplistener.accept();
+        match result {
+            Ok(s) => {
+                let (sender, receiver) = yassyui::client_split(s.0);
+                // Next line what? Read this: https://doc.rust-lang.org/nomicon/unchecked-uninit.html
+                ptr::write(&mut (*ui).receiver, receiver);
+                
+                // TODO: Why does the compiler allow (*ui).sender = sender, but not (*ui).receiver = receiver?
+                ptr::write(&mut (*ui).sender, sender);
+                (*ui).connected = true;
+            }
+            _ => {
+                if (*ui).connected {
+                    // Loop over 5 incoming ws messages. Will block if not
+                    // breaking out. If one uses no loop at all, latency is 
+                    // high. 
+                    // TODO: This will depend on the frequency with which
+                    // ui_idle() is called by host.
+                    let mut cnt = 0;
+                    for message in (*ui).receiver.incoming_messages() {
+                        match message {
+                            Ok(m) => {
+                                let message: Message =m;
+                                let vecu8 = message.payload.into_owned();
+                                let mess = String::from_utf8(vecu8).unwrap();
+                                println!("message: {}", mess);
+                                let res = json::decode(&mess);
+                                match res {
+                                    Ok(param) => {
+                                        yassyui::on_ws_receive((*ui).write, (*ui).controller, &param);
+                                    }
+                                    Err(err) => println!("Err: {}", err),
+                                }
+                                
+                            },
+                            _ => {}
+                        }
+                        if cnt == 5 {
+                            break
+                        }
+                        cnt = cnt+1
+                    }
+                }
+
+            },
+        }
         return !(*ui).showing as libc::c_int;
     }
 }
@@ -242,8 +299,10 @@ fn get_offset() -> isize {
     // needed for in the kx_* functions. AFAIK the only way to avoid this
     // would be to make sure that extwidget is always the *first* member of
     // yassyui, in which case the offset is zero
-    let ya = yassyui::yassyui::new();
-    let uiptr = &ya as *const yassyui::yassyui as isize;
-    let extptr = &ya.extwidget as *const lv2::LV2UIExternalUIWidget as isize;
-    uiptr - extptr
+    // println!{"***** in get_offset()"}
+    // let ya = yassyui::yassyui::new();
+    // let uiptr = &ya as *const yassyui::yassyui as isize;
+    // let extptr = &ya.extwidget as *const lv2::LV2UIExternalUIWidget as isize;
+    // uiptr - extptr
+    return 0 as isize
 }
