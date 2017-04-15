@@ -20,7 +20,7 @@ impl Synthuris {
 #[repr(C)]
 pub struct Lv2SynthPlugin {
     pub map: *mut lv2::LV2UridMap,
-    pub in_port: *const lv2::LV2AtomSequence,
+    pub in_port: *const lv2::LV2_Atom_Sequence,
     pub output: *mut f32,
     pub uris: Synthuris,
     pub plugin: plugin::SynthPlugin,
@@ -49,7 +49,7 @@ impl Lv2SynthPlugin {
     }
     pub fn connect_port(&mut self, port: u32, data: *mut libc::c_void) {
         match port {
-            0 => self.in_port = data as *const lv2::LV2AtomSequence,
+            0 => self.in_port = data as *const lv2::LV2_Atom_Sequence,
             1 => self.output = data as *mut f32,
             _ => self.map_params(port, data),
         }
