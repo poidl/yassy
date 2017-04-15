@@ -6,3 +6,4 @@ vgcore*
 nobackup
 htl_tmp_builddir
 *.pdf
+.directory

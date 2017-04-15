@@ -48,7 +48,7 @@ impl Descriptor {
             let seq = (*synth).in_port;
             let output = (*synth).output;
             // pointer to 1st event body
-            let mut ev: *const lv2::Lv2AtomEvent = lv2::lv2_atom_sequence_begin(&(*seq).body);
+            let mut ev: *const lv2::LV2AtomEvent = lv2::lv2_atom_sequence_begin(&(*seq).body);
 
             let mut mq = false; // midi is queued
             let mut ievent = 0;
