@@ -198,8 +198,7 @@ pub extern "C" fn ui_idle(handle: lv2::LV2UIHandle) -> libc::c_int {
             // high. 
             // TODO: This will depend on the frequency with which
             // ui_idle() is called by host.
-            let mut cnt = 0;
-            for message in (*ui).receiver.incoming_messages() {
+            for message in (*ui).receiver.incoming_messages().take(5) {
                 match message {
                     Ok(m) => {
                         let message: Message =m;
@@ -217,10 +216,6 @@ pub extern "C" fn ui_idle(handle: lv2::LV2UIHandle) -> libc::c_int {
                     },
                     _ => {}
                 }
-                if cnt == 5 {
-                    break
-                }
-                cnt = cnt+1
             }
         }
         return !(*ui).showing as libc::c_int;
