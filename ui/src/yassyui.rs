@@ -1,7 +1,7 @@
 use libc;
 use lv2;
 use std::ptr;
-use websocket::{Message};
+use websocket::Message;
 use websocket::server::request::Request;
 use websocket::client;
 use websocket::header::WebSocketProtocol;
@@ -28,19 +28,19 @@ pub struct yassyui {
     pub write: lv2::LV2UIWriteFunction,
     pub showing: bool,
     // TODO: there is only one pair of sender and receiver, i.e. one connection
-    // per plugin instance. If e.g. a second browser tab connects, it will 
+    // per plugin instance. If e.g. a second browser tab connects, it will
     // work but render the first browser tab unresponsive. Change this?
     pub sender: client::Sender<WebSocketStream>,
     pub receiver: client::Receiver<WebSocketStream>,
     pub tcplistener: TcpListener,
-    pub connected: bool
+    pub connected: bool,
 }
 
 impl yassyui {
     pub fn new() -> yassyui {
 
-        let tcplistener = TcpListener::bind("127.0.0.1:0").unwrap();
-        // TODO: need to copy this manually into the javascript file. How 
+        let tcplistener = TcpListener::bind("127.0.0.1:55555").unwrap();
+        // TODO: need to copy this manually into the javascript file. How
         // can this be automated?
         println!("UI listening at {}.", tcplistener.local_addr().unwrap());
         tcplistener.set_nonblocking(true).expect("Cannot set non-blocking");
@@ -61,7 +61,7 @@ impl yassyui {
                 sender: mem::uninitialized(),
                 receiver: mem::uninitialized(),
                 tcplistener: tcplistener,
-                connected: false
+                connected: false,
             };
             ui
         }
@@ -69,7 +69,7 @@ impl yassyui {
 }
 
 pub fn client_split(s: TcpStream)
-                -> (client::Sender<WebSocketStream>, client::Receiver<WebSocketStream>) {
+                    -> (client::Sender<WebSocketStream>, client::Receiver<WebSocketStream>) {
     let tcpstream = s;
     tcpstream.set_nonblocking(true).expect("set_nonblocking call failed");
     let wsstream = WebSocketStream::Tcp(tcpstream);
@@ -105,7 +105,9 @@ pub fn client_split(s: TcpStream)
     client.split()
 }
 
-pub fn on_ws_receive(write: lv2::LV2UIWriteFunction, controller: lv2::LV2UIController, param: &Param) {
+pub fn on_ws_receive(write: lv2::LV2UIWriteFunction,
+                     controller: lv2::LV2UIController,
+                     param: &Param) {
 
     if let Some(ref func) = write {
         (*func)(controller,

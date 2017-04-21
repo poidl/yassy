@@ -15,6 +15,8 @@ use std::str;
 use std::ptr;
 use rustc_serialize::json;
 use websocket::{Message, Sender, Receiver};
+use std::net::TcpListener;
+
 // Credits to Hanspeter Portner for explaining how ui:UI and kx:Widget work. See
 // http://lists.lv2plug.in/pipermail/devel-lv2plug.in/2016-May/001649.html
 
@@ -183,6 +185,7 @@ pub extern "C" fn ui_idle(handle: lv2::LV2UIHandle) -> libc::c_int {
                     // TODO: Why does the compiler allow (*ui).sender = sender, but not (*ui).receiver = receiver?
                     ptr::write(&mut (*ui).sender, sender);
                     (*ui).connected = true;
+                    (*ui).tcplistener= TcpListener::bind("127.0.0.1:0").unwrap();
                 }
                 _ => {}
             }
