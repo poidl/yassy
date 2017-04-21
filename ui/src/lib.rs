@@ -185,6 +185,9 @@ pub extern "C" fn ui_idle(handle: lv2::LV2UIHandle) -> libc::c_int {
                     // TODO: Why does the compiler allow (*ui).sender = sender, but not (*ui).receiver = receiver?
                     ptr::write(&mut (*ui).sender, sender);
                     (*ui).connected = true;
+                    // TODO: The intention here is to free the port used in 
+                    // new() to avoid "Address already in use" errors. But this
+                    // is hardly a good solution? How to avoid?
                     (*ui).tcplistener= TcpListener::bind("127.0.0.1:0").unwrap();
                 }
                 _ => {}
