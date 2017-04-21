@@ -4,7 +4,7 @@ window.onload = function () {
   but.addEventListener('click', but_send, false);
 
   // var socket = new WebSocket('ws://echo.websocket.org');
-  var socket = new WebSocket('ws://127.0.0.1:37061');
+  var socket = new WebSocket('ws://127.0.0.1:45573');
   socket.onopen = function (event) {
     console.log("conntection established ...")
     socket.send("hoitaus");

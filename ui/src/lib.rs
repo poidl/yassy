@@ -172,51 +172,53 @@ pub extern "C" fn ui_idle(handle: lv2::LV2UIHandle) -> libc::c_int {
     // println!("host calls idle()");
     let ui = handle as *mut yassyui::yassyui;
     unsafe {
-        let result = (*ui).tcplistener.accept();
-        match result {
-            Ok(s) => {
-                let (sender, receiver) = yassyui::client_split(s.0);
-                // Next line what? Read this: https://doc.rust-lang.org/nomicon/unchecked-uninit.html
-                ptr::write(&mut (*ui).receiver, receiver);
-                
-                // TODO: Why does the compiler allow (*ui).sender = sender, but not (*ui).receiver = receiver?
-                ptr::write(&mut (*ui).sender, sender);
-                (*ui).connected = true;
-            }
-            _ => {
-                if (*ui).connected {
-                    // Loop over 5 incoming ws messages. Will block if not
-                    // breaking out. If one uses no loop at all, latency is 
-                    // high. 
-                    // TODO: This will depend on the frequency with which
-                    // ui_idle() is called by host.
-                    let mut cnt = 0;
-                    for message in (*ui).receiver.incoming_messages() {
-                        match message {
-                            Ok(m) => {
-                                let message: Message =m;
-                                let vecu8 = message.payload.into_owned();
-                                let mess = String::from_utf8(vecu8).unwrap();
-                                println!("message: {}", mess);
-                                let res = json::decode(&mess);
-                                match res {
-                                    Ok(param) => {
-                                        yassyui::on_ws_receive((*ui).write, (*ui).controller, &param);
-                                    }
-                                    Err(err) => println!("Err: {}", err),
-                                }
-                                
-                            },
-                            _ => {}
-                        }
-                        if cnt == 5 {
-                            break
-                        }
-                        cnt = cnt+1
-                    }
+        if !(*ui).connected {
+            let result = (*ui).tcplistener.accept();
+            match result {
+                Ok(s) => {
+                    let (sender, receiver) = yassyui::client_split(s.0);
+                    // Next line what? Read this: https://doc.rust-lang.org/nomicon/unchecked-uninit.html
+                    ptr::write(&mut (*ui).receiver, receiver);
+                    
+                    // TODO: Why does the compiler allow (*ui).sender = sender, but not (*ui).receiver = receiver?
+                    ptr::write(&mut (*ui).sender, sender);
+                    (*ui).connected = true;
                 }
+                _ => {}
+            }
+        } else {
 
-            },
+            // already connected
+
+            // Loop over 5 incoming ws messages. Will block if not
+            // breaking out. If one uses no loop at all, latency is 
+            // high. 
+            // TODO: This will depend on the frequency with which
+            // ui_idle() is called by host.
+            let mut cnt = 0;
+            for message in (*ui).receiver.incoming_messages() {
+                match message {
+                    Ok(m) => {
+                        let message: Message =m;
+                        let vecu8 = message.payload.into_owned();
+                        let mess = String::from_utf8(vecu8).unwrap();
+                        println!("message: {}", mess);
+                        let res = json::decode(&mess);
+                        match res {
+                            Ok(param) => {
+                                yassyui::on_ws_receive((*ui).write, (*ui).controller, &param);
+                            }
+                            Err(err) => println!("Err: {}", err),
+                        }
+                        
+                    },
+                    _ => {}
+                }
+                if cnt == 5 {
+                    break
+                }
+                cnt = cnt+1
+            }
         }
         return !(*ui).showing as libc::c_int;
     }
