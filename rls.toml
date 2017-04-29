@@ -1,0 +1,3 @@
+# enable formatting, see
+# https://github.com/editor-rs/vscode-rust/blob/master/doc/rls_mode/main.md
+unstable_features = true
