@@ -32,38 +32,57 @@ pub struct yassyui {
     // work but render the first browser tab unresponsive. Change this?
     pub sender: client::Sender<WebSocketStream>,
     pub receiver: client::Receiver<WebSocketStream>,
-    pub tcplistener: TcpListener,
+    pub tcplistener: Option<TcpListener>,
     pub connected: bool,
 }
 
 impl yassyui {
-    pub fn new() -> yassyui {
+    pub fn new() -> Result<yassyui, &'static str> {
 
-        let tcplistener = TcpListener::bind("127.0.0.1:55555").unwrap();
-        // TODO: need to copy this manually into the javascript file. How
-        // can this be automated?
-        println!("UI listening at {}.", tcplistener.local_addr().unwrap());
-        tcplistener.set_nonblocking(true).expect("Cannot set non-blocking");
-        unsafe {
-            let ui = yassyui {
-                extwidget: lv2::LV2UIExternalUIWidget {
-                    // Why "None"? Nullable function pointers. See
-                    // https://doc.rust-lang.org/book/ffi.html
-                    // https://mail.mozilla.org/pipermail/rust-dev/2014-September/011200.html
-                    run: None,
-                    show: None,
-                    hide: None,
-                },
-                host: ptr::null(),
-                controller: lv2::LV2UIController(ptr::null()),
-                write: None,
-                showing: false,
-                sender: mem::uninitialized(),
-                receiver: mem::uninitialized(),
-                tcplistener: tcplistener,
-                connected: false,
-            };
-            ui
+        let result = TcpListener::bind("127.0.0.1:55555");
+        // If binding fails, instantiation must fail softly and return 
+        // ptr_null(). That will happen if e.g.  the address is already 
+        // in use. Consider this:
+        // A user instantiates a UI, forgets to open the browser tab 
+        // (-> listener keeps listening), and then instantiates a second UI.
+        // On some hosts, no error message is displayed 
+        // except in the console. If the user then connects, they will connect
+        // to the first plugin although they expected to connected to the 
+        // second one (whose instantiation failed but they don't know). 
+        // Read this: http://stackoverflow.com/questions/43535480/how-can-i-reuse-a-server-side-tcp-endpoint-for-multiple-consumers
+        // TODO: improve this
+        match result {
+            Ok(tcplistener) => {
+
+                println!("UI listening at {}.", tcplistener.local_addr().unwrap());
+                tcplistener.set_nonblocking(true).expect("Cannot set non-blocking");
+                unsafe {
+                    let ui = yassyui {
+                        extwidget: lv2::LV2UIExternalUIWidget {
+                            // Why "None"? Nullable function pointers. See
+                            // https://doc.rust-lang.org/book/ffi.html
+                            // https://mail.mozilla.org/pipermail/rust-dev/2014-September/011200.html
+                            run: None,
+                            show: None,
+                            hide: None,
+                        },
+                        host: ptr::null(),
+                        controller: lv2::LV2UIController(ptr::null()),
+                        write: None,
+                        showing: false,
+                        // TODO: is it possible to use Option() here?
+                        sender: mem::uninitialized(),
+                        receiver: mem::uninitialized(),
+                        tcplistener: Some(tcplistener),
+                        connected: false,
+                    };
+                    Ok(ui)
+                }
+            }
+            _ => {
+                println!("***************Going southward**************");
+                Err("***************Going southward**************")
+            }
         }
     }
 }

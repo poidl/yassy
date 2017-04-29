@@ -36,34 +36,41 @@ impl Descriptor {
                                   -> lv2::LV2UIHandle {
         println!("host calls instantiate()");
         lv2::print_features(features);
-        let mut bx = Box::new(yassyui::yassyui::new());
+        match yassyui::yassyui::new() {
+            Ok(yas) => {
 
-        bx.controller = controller;
-        bx.write = write_function;
-        let uitype = unsafe { lv2::cstring((*descriptor).uri) };
-        println!("UITYPE: {}", uitype);
-        if uitype == "http://example.org/yassyui#kx" {
-            println!("MAPPING FEATURE FOR: {}", uitype);
-            let featureptr = lv2::mapfeature(features,
-                                             "http://kxstudio.sf.net/ns/lv2ext/external-ui#Host");
-            match featureptr {
-                Ok(fp) => bx.host = fp as *const lv2::LV2UIExternalUIHost,
-                _ => return ptr::null_mut(),
+                let mut bx = Box::new(yas);
+
+                bx.controller = controller;
+                bx.write = write_function;
+                let uitype = unsafe { lv2::cstring((*descriptor).uri) };
+                println!("UITYPE: {}", uitype);
+                if uitype == "http://example.org/yassyui#kx" {
+                    println!("MAPPING FEATURE FOR: {}", uitype);
+                    let featureptr = lv2::mapfeature(features,
+                                                    "http://kxstudio.sf.net/ns/lv2ext/external-ui#Host");
+                    match featureptr {
+                        Ok(fp) => bx.host = fp as *const lv2::LV2UIExternalUIHost,
+                        _ => return ptr::null_mut(),
+                    }
+                    bx.extwidget.run = Some(kx_run);
+                    bx.extwidget.show = Some(kx_show);
+                    bx.extwidget.hide = Some(kx_hide);
+                    unsafe {
+                        *widget = &mut bx.extwidget as *mut lv2::LV2UIExternalUIWidget as lv2::LV2UIWidget
+                    }
+                }
+
+                let ptr = (&*bx as *const yassyui::yassyui) as *mut libc::c_void;
+                mem::forget(bx);
+                ptr
             }
-            bx.extwidget.run = Some(kx_run);
-            bx.extwidget.show = Some(kx_show);
-            bx.extwidget.hide = Some(kx_hide);
-            unsafe {
-                *widget = &mut bx.extwidget as *mut lv2::LV2UIExternalUIWidget as lv2::LV2UIWidget
-            }
+            // default, e.g. if the port is already bound
+            _ => ptr::null_mut()
         }
-
-        let ptr = (&*bx as *const yassyui::yassyui) as *mut libc::c_void;
-        mem::forget(bx);
-        ptr
     }
 
-    pub extern "C" fn cleanup(_handle: lv2::LV2UIHandle) {
+    pub extern "C" fn cleanup(_handle: lv2::LV2UIHandle)     {
         println!("host calls cleanup()");
     }
 
@@ -175,23 +182,36 @@ pub extern "C" fn ui_idle(handle: lv2::LV2UIHandle) -> libc::c_int {
     let ui = handle as *mut yassyui::yassyui;
     unsafe {
         if !(*ui).connected {
-            let result = (*ui).tcplistener.accept();
-            match result {
-                Ok(s) => {
-                    let (sender, receiver) = yassyui::client_split(s.0);
-                    // Next line what? Read this: https://doc.rust-lang.org/nomicon/unchecked-uninit.html
-                    ptr::write(&mut (*ui).receiver, receiver);
-                    
-                    // TODO: Why does the compiler allow (*ui).sender = sender, but not (*ui).receiver = receiver?
-                    ptr::write(&mut (*ui).sender, sender);
-                    (*ui).connected = true;
-                    // TODO: The intention here is to free the port used in 
-                    // new() to avoid "Address already in use" errors. But this
-                    // is hardly a good solution? How to avoid?
-                    (*ui).tcplistener= TcpListener::bind("127.0.0.1:0").unwrap();
+
+            let ref option = (*ui).tcplistener;
+            match *option {
+                Some(ref listener) => {
+                    let result = listener.accept();
+                    match result {
+                        Ok(s) => {
+                            let (sender, receiver) = yassyui::client_split(s.0);
+                            // Next line what? Read this: https://doc.rust-lang.org/nomicon/unchecked-uninit.html
+                            ptr::write(&mut (*ui).receiver, receiver);
+                            
+                            // TODO: Why does the compiler allow (*ui).sender = sender, but not (*ui).receiver = receiver?
+                            ptr::write(&mut (*ui).sender, sender);
+                            (*ui).connected = true;
+                            // TODO: The intention here is to free the port used in 
+                            // new() to avoid "Address already in use" errors. But this
+                            // is hardly a good solution? How to avoid?
+                            // (*ui).tcplistener= TcpListener::bind("127.0.0.1:0").unwrap();
+                            (*ui).tcplistener= None;
+                            // ((*ui).tcplistener.0).inner.shutdown(std::net::Shutdown::Both);
+                        }
+                        _ => {}
+                    }
                 }
-                _ => {}
+                None => {}
             }
+                
+
+            
+
         } else {
 
             // already connected

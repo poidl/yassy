@@ -12,4 +12,5 @@ DOCUMENTATION:
 %https://github.com/poidl/yassy/blob/2b6f974c33e525abc3e9d08fe0a439fb1c91d261/doc/filters.html
 
 Other:
+*) is it possible to use Option() for the sender/receiver fields in the ui struct, instead of mem::uninitialized()
 *) there is a GSL dependency in utils
