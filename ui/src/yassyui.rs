@@ -6,9 +6,6 @@ use websocket::Server as wsServer;
 use websocket::server::NoSslAcceptor;
 use websocket::sender::Writer as wsWriter;
 use websocket::receiver::Reader as wsReader;
-
-// use std::net::TcpListener;
-// use std::net::TcpStream;
 use std::mem;
 
 // Automatically generate `RustcDecodable` and `RustcEncodable` trait
