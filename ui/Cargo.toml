@@ -2,12 +2,13 @@
 name = "yassyui"
 version = "0.1.0"
 authors = ["poidl <hoitaus@gmail.com>"]
-
+#workspace = "../../yassy"
 
 [dependencies]
 libc = "*"
 lv2 = { path = "../../lv2" }
-websocket = "*"
+#websocket = "*"
+websocket = { path = "../../../rust-websocket" }
 rustc-serialize = "*"
 
 [lib]

@@ -1,14 +1,14 @@
 use libc;
 use lv2;
 use std::ptr;
-use websocket::Message;
-use websocket::server::request::Request;
-use websocket::client;
-use websocket::header::WebSocketProtocol;
-use websocket::stream::WebSocketStream;
-use std::io::{Read, Write};
-use std::net::TcpListener;
-use std::net::TcpStream;
+use websocket::stream::TcpStream as wsTcpStream;
+use websocket::Server as wsServer;
+use websocket::server::NoSslAcceptor;
+use websocket::sender::Writer as wsWriter;
+use websocket::receiver::Reader as wsReader;
+
+// use std::net::TcpListener;
+// use std::net::TcpStream;
 use std::mem;
 
 // Automatically generate `RustcDecodable` and `RustcEncodable` trait
@@ -30,16 +30,16 @@ pub struct yassyui {
     // TODO: there is only one pair of sender and receiver, i.e. one connection
     // per plugin instance. If e.g. a second browser tab connects, it will
     // work but render the first browser tab unresponsive. Change this?
-    pub sender: client::Sender<WebSocketStream>,
-    pub receiver: client::Receiver<WebSocketStream>,
-    pub tcplistener: Option<TcpListener>,
+    pub sender: wsWriter<wsTcpStream>,
+    pub receiver: wsReader<wsTcpStream>,
+    pub server: Option<wsServer<NoSslAcceptor>>,
     pub connected: bool,
 }
 
 impl yassyui {
     pub fn new() -> Result<yassyui, &'static str> {
 
-        let result = TcpListener::bind("127.0.0.1:55555");
+        let result = wsServer::bind("127.0.0.1:55555");
         // If binding fails, instantiation must fail softly and return 
         // ptr_null(). That will happen if e.g.  the address is already 
         // in use. Consider this:
@@ -52,10 +52,10 @@ impl yassyui {
         // Read this: http://stackoverflow.com/questions/43535480/how-can-i-reuse-a-server-side-tcp-endpoint-for-multiple-consumers
         // TODO: improve this
         match result {
-            Ok(tcplistener) => {
+            Ok(server) => {
 
-                println!("UI listening at {}.", tcplistener.local_addr().unwrap());
-                tcplistener.set_nonblocking(true).expect("Cannot set non-blocking");
+                println!("UI listening at {}.", server.local_addr().unwrap());
+                server.set_nonblocking(true).expect("Cannot set non-blocking");
                 unsafe {
                     let ui = yassyui {
                         extwidget: lv2::LV2UIExternalUIWidget {
@@ -73,55 +73,17 @@ impl yassyui {
                         // TODO: is it possible to use Option() here?
                         sender: mem::uninitialized(),
                         receiver: mem::uninitialized(),
-                        tcplistener: Some(tcplistener),
+                        server: Some(server),
                         connected: false,
                     };
                     Ok(ui)
                 }
             }
             _ => {
-                println!("***************Going southward**************");
-                Err("***************Going southward**************")
+                Err("YASSYUI ERROR: BINDING FAILED (ADDRESS IN USE?)")
             }
         }
     }
-}
-
-pub fn client_split(s: TcpStream)
-                    -> (client::Sender<WebSocketStream>, client::Receiver<WebSocketStream>) {
-    let tcpstream = s;
-    tcpstream.set_nonblocking(true).expect("set_nonblocking call failed");
-    let wsstream = WebSocketStream::Tcp(tcpstream);
-    pub struct Connection<R: Read, W: Write>(R, W);
-    let connection = Connection(wsstream.try_clone().unwrap(), wsstream.try_clone().unwrap());
-
-    let request = Request::read(connection.0, connection.1).unwrap();
-    let headers = request.headers.clone(); // Keep the headers so we can check them
-
-    request.validate().unwrap(); // Validate the request
-
-    let mut response = request.accept(); // Form a response
-
-    if let Some(&WebSocketProtocol(ref protocols)) = headers.get() {
-        if protocols.contains(&("rust-websocket".to_string())) {
-            // We have a protocol we want to use
-            response.headers
-                .set(WebSocketProtocol(vec!["rust-websocket".to_string()]));
-        }
-    }
-    let mut client = response.send().unwrap(); // Send the response
-
-    let ip = client.get_mut_sender()
-        .get_mut()
-        .peer_addr()
-        .unwrap();
-
-    println!("Connection from {}", ip);
-
-    let message: Message = Message::text("Hello".to_string());
-    client.send_message(&message).unwrap();
-
-    client.split()
 }
 
 pub fn on_ws_receive(write: lv2::LV2UIWriteFunction,

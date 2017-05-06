@@ -12,10 +12,14 @@ libc = "*"
 mygsl = { path = "mygsl" }
 midi= { path = "midi" }
 lv2 = { path = "../lv2"}
+# yassyui isn't a dependecy, but included here to make "workspace" work
+#yassyui = { path = "ui" }
+
 
 [lib]
 name = "yassy"
 crate-type = ["rlib","dylib"] # ?
+
 
 #[dev-dependencies] # for testing/documentation
 #gnuplot = "*"

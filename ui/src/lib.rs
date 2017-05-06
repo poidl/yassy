@@ -14,8 +14,7 @@ use std::ffi::CStr;
 use std::str;
 use std::ptr;
 use rustc_serialize::json;
-use websocket::{Message, Sender, Receiver};
-use std::net::TcpListener;
+use websocket::Message;
 
 // Credits to Hanspeter Portner for explaining how ui:UI and kx:Widget work. See
 // http://lists.lv2plug.in/pipermail/devel-lv2plug.in/2016-May/001649.html
@@ -66,7 +65,10 @@ impl Descriptor {
                 ptr
             }
             // default, e.g. if the port is already bound
-            _ => ptr::null_mut()
+            Err(e) => {
+                println!("YASSYUI ERROR: INSTANTIATION FAILED: {}", e);
+                ptr::null_mut()
+            }
         }
     }
 
@@ -89,7 +91,6 @@ impl Descriptor {
                 let param = yassyui::Param{key: port_index, value: hoit as f32};
                 let encoded = json::encode(&param).unwrap();
                 let message: Message = Message::text(encoded);
-
                 match (*yas).sender.send_message(&message) {
                     Ok(()) => (),
                     Err(e) => {
@@ -183,26 +184,32 @@ pub extern "C" fn ui_idle(handle: lv2::LV2UIHandle) -> libc::c_int {
     unsafe {
         if !(*ui).connected {
 
-            let ref option = (*ui).tcplistener;
+            let ref mut option = (*ui).server;
             match *option {
-                Some(ref listener) => {
-                    let result = listener.accept();
+                Some(ref mut server) => {
+                    let result = server.accept();
                     match result {
-                        Ok(s) => {
-                            let (sender, receiver) = yassyui::client_split(s.0);
-                            // Next line what? Read this: https://doc.rust-lang.org/nomicon/unchecked-uninit.html
-                            ptr::write(&mut (*ui).receiver, receiver);
-                            
-                            // TODO: Why does the compiler allow (*ui).sender = sender, but not (*ui).receiver = receiver?
-                            ptr::write(&mut (*ui).sender, sender);
-                            (*ui).connected = true;
-                            // TODO: The intention here is to free the port used in 
-                            // new() to avoid "Address already in use" errors. But this
-                            // is hardly a good solution? How to avoid?
-                            // (*ui).tcplistener= TcpListener::bind("127.0.0.1:0").unwrap();
-                            (*ui).tcplistener= None;
-                            // ((*ui).tcplistener.0).inner.shutdown(std::net::Shutdown::Both);
+                        Ok(wsupgrade) => {
+                            // let (sender, receiver) = yassyui::client_split(tcpstream.0);
+                            wsupgrade.tcp_stream().set_nonblocking(true).expect("Cannot set non-blocking");
+                            match wsupgrade.accept() {
+                                Ok(client) => {
+                                    let (receiver, sender) = client.split().unwrap();
+                                    // Next line what? Read this: https://doc.rust-lang.org/nomicon/unchecked-uninit.html TODO: can one use Option<> instead?
+
+                                    ptr::write(&mut (*ui).receiver, receiver);
+                                    
+                                    // TODO: Why does the compiler allow (*ui).sender = sender, but not (*ui).receiver = receiver?
+                                    ptr::write(&mut (*ui).sender, sender);
+                                    (*ui).connected = true;
+
+                                    (*ui).server= None;
+
+                                }
+                                _=> {}
+                            }
                         }
+
                         _ => {}
                     }
                 }
