@@ -8,9 +8,8 @@ authors = ["poidl <hoitaus@gmail.com>"]
 libc = "*"
 lv2 = { path = "../../lv2" }
 #websocket = "*"
-websocket = { path = "../../../rust-websocket" }
+websocket = { path = "../../../ghforks/rust-websocket" }
 rustc-serialize = "*"
 
 [lib]
-name = "yassyui"
-crate-type = ["rlib","dylib"] # ?
+crate-type = ["dylib"] # ?

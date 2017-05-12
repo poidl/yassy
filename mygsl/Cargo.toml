@@ -7,5 +7,4 @@ authors = ["Stefan <hoitaus@gmail.com>"]
 libc="*"
 
 [lib]
-name = "mygsl"
-crate-type = ["rlib","dylib"]
+crate-type = ["dylib"]
