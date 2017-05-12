@@ -16,7 +16,6 @@ if [ -d "$DEST" ]; then
     mv $DEST $BACKUPDIR/$BUNDLE
 fi
 cp -r $BUNDLE $LV2DIR
-# cp target/debug/$SONAME $DEST
-# cp target/debug/libyassyui.so $DEST
-cp target/debug/*so $DEST
-cp ui/yassyui.lv2/yassyui.ttl $DEST
+cp target/debug/$SONAME $DEST
+cp target/debug/libyassyui.so $DEST
+

@@ -7,4 +7,4 @@ authors = ["Stefan <hoitaus@gmail.com>"]
 libc="*"
 
 [lib]
-crate-type = ["dylib"]
+crate-type = ["rlib","dylib"]
