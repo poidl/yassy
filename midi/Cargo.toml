@@ -3,5 +3,3 @@ name = "midi"
 version = "0.1.0"
 authors = ["poidl <hoitaus@gmail.com>"]
 
-[lib]
-crate-type = ["rlib","dylib"]

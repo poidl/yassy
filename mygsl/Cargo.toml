@@ -5,6 +5,3 @@ authors = ["Stefan <hoitaus@gmail.com>"]
 
 [dependencies]
 libc="*"
-
-[lib]
-crate-type = ["rlib","dylib"]
