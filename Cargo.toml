@@ -18,7 +18,7 @@ yassyui = { path = "ui" }
 
 [lib]
 name = "yassy"
-crate-type = ["cdylib"]
+crate-type = ["rlib","cdylib"] # the "rlib" is necessary for testing
 
 
 #[dev-dependencies] # for testing/documentation

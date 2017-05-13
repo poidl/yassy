@@ -1,4 +1,4 @@
-extern crate  yassy;
+extern crate yassy;
 
 const N: u32 = 2147483648;
 
