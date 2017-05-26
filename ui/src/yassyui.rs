@@ -30,7 +30,6 @@ pub struct yassyui {
     pub sender: Option<wsWriter<wsTcpStream>>,
     pub receiver: Option<wsReader<wsTcpStream>>,
     pub server: Option<wsServer<NoSslAcceptor>>,
-    pub connected: bool,
 }
 
 impl yassyui {
@@ -71,7 +70,6 @@ impl yassyui {
                         sender: None,
                         receiver: None,
                         server: Some(server),
-                        connected: false,
                     };
                     Ok(ui)
                 // }

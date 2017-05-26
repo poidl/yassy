@@ -87,26 +87,23 @@ impl Descriptor {
             let hoit = *(buffer as *const libc::c_float);
             println!("  buffer: {}", hoit);
             let yas = ui as *mut yassyui::yassyui;
-            if (*yas).connected {
-                let param = yassyui::Param{key: port_index, value: hoit as f32};
-                let encoded = json::encode(&param).unwrap();
-                let message: Message = Message::text(encoded);
-                match (*yas).sender {
-                    Some(ref mut sender) => {
-                        match sender.send_message(&message) {
-                            Ok(_) => (),
-                            Err(e) => {
-                                println!("Send Loop: {:?}", e);
-                                let _ = sender.send_message(&Message::close());
-                                return;
-                            }
+            match (*yas).sender {
+                Some(ref mut sender) => {
+                    let param = yassyui::Param{key: port_index, value: hoit as f32};
+                    let encoded = json::encode(&param).unwrap();
+                    let message: Message = Message::text(encoded);
+                    match sender.send_message(&message) {
+                        Ok(_) => (),
+                        Err(e) => {
+                            println!("Send Loop: {:?}", e);
+                            let _ = sender.send_message(&Message::close());
+                            return;
                         }
                     }
-                    _ => {} // cannot happen if .conntected = true ?
-                };
-            }
+                }
+                _ => {} // cannot happen if .conntected = true ?
+            };
         }
-
     }
 
     pub extern "C" fn extension_data(uri: *const libc::c_char) -> *const libc::c_void {
@@ -187,82 +184,77 @@ pub extern "C" fn ui_idle(handle: lv2::LV2UIHandle) -> libc::c_int {
     // println!("host calls idle()");
     let ui = handle as *mut yassyui::yassyui;
     unsafe {
-        if !(*ui).connected {
+        // if !(*ui).connected {
 
-            let ref mut option = (*ui).server;
-            match *option {
-                Some(ref mut server) => {
-                    let result = server.accept();
-                    match result {
-                        Ok(wsupgrade) => {
-                            // let (sender, receiver) = yassyui::client_split(tcpstream.0);
-                            wsupgrade.tcp_stream().set_nonblocking(true).expect("Cannot set non-blocking");
-                            match wsupgrade.accept() {
-                                Ok(client) => {
-                                    let (receiver, sender) = client.split().unwrap();
-                                    // Next line what? Read this: https://doc.rust-lang.org/nomicon/unchecked-uninit.html TODO: can one use Option<> instead?
-
-                                    // ptr::write(&mut (*ui).receiver, receiver);
-                                    (*ui).receiver = Some(receiver);
-                                    
-                                    // TODO: Why does the compiler allow (*ui).sender = sender, but not (*ui).receiver = receiver?
-                                    // ptr::write(&mut (*ui).sender, sender);
-                                    (*ui).sender= Some(sender);
-                                    (*ui).connected = true;
-
-                                    (*ui).server= None;
-
-                                }
-                                _=> {}
-                            }
-                        }
-
-                        _ => {}
-                    }
-                }
-                None => {}
-            }
-                
-
-            
-
-        } else {
+        match (*ui).receiver {
 
             // already connected
-
             // Loop over 5 incoming ws messages. Will block if not
             // breaking out. If one uses no loop at all, latency is 
             // high. 
             // TODO: This will depend on the frequency with which
             // ui_idle() is called by host.
-            let ref mut option = (*ui).receiver;
-            match *option {
-                Some(ref mut receiver) => {
+            Some(ref mut receiver) => {
 
-                    for message in receiver.incoming_messages().take(5) {
-                        match message {
-                            Ok(m) => {
-                                let message: Message =m;
-                                let vecu8 = message.payload.into_owned();
-                                let mess = String::from_utf8(vecu8).unwrap();
-                                println!("message: {}", mess);
-                                let res = json::decode(&mess);
-                                match res {
-                                    Ok(param) => {
-                                        yassyui::on_ws_receive((*ui).write, (*ui).controller, &param);
-                                    }
-                                    Err(err) => println!("Err: {}", err),
+                for message in receiver.incoming_messages().take(5) {
+                    match message {
+                        Ok(m) => {
+                            let message: Message =m;
+                            let vecu8 = message.payload.into_owned();
+                            let mess = String::from_utf8(vecu8).unwrap();
+                            println!("message: {}", mess);
+                            let res = json::decode(&mess);
+                            match res {
+                                Ok(param) => {
+                                    yassyui::on_ws_receive((*ui).write, (*ui).controller, &param);
                                 }
-                                
-                            },
+                                Err(err) => println!("Err: {}", err),
+                            }
+                            
+                        },
+                        _ => {}
+                    }
+                }
+
+            }
+            // still disconnected
+            _ => {
+                match (*ui).server {
+                    // connect
+                    Some(ref mut server) => {
+                        match server.accept() {
+                            Ok(wsupgrade) => {
+                                wsupgrade.tcp_stream().set_nonblocking(true).expect("Cannot set non-blocking");
+                                match wsupgrade.accept() {
+                                    Ok(client) => {
+                                        let (receiver, sender) = client.split().unwrap();
+                                        (*ui).receiver = Some(receiver);
+                                        (*ui).sender= Some(sender);
+                                        (*ui).server= None;
+
+                                    }
+                                    _=> {}
+                                }
+                            }
+
                             _ => {}
                         }
                     }
+                    _ => {
+                        panic!("Server doesn't exist. Don't know what happened.");
+                    }
 
                 }
-                _ => {} // Cannot happen if connected?
-            }
+
+            } 
         }
+                
+
+            
+
+        // } else {
+
+        // }
         return !(*ui).showing as libc::c_int;
     }
 }
