@@ -1,7 +1,3 @@
-// #![allow(unused_imports)]
-// #![allow(dead_code)]
-// #![allow(unused_variables)]
-// #![allow(non_snake_case)]
 
 extern crate libc;
 extern crate lv2;
@@ -84,12 +80,14 @@ impl Descriptor {
         println!("host calls port_event() on port_index: {}", port_index);
 
         unsafe {
-            let hoit = *(buffer as *const libc::c_float);
-            println!("  buffer: {}", hoit);
+            let buf = *(buffer as *const libc::c_float);
+            println!("  buffer: {}", buf);
             let yas = ui as *mut yassyui::yassyui;
             match (*yas).sender {
                 Some(ref mut sender) => {
-                    let param = yassyui::Param{key: port_index, value: hoit as f32};
+                    // sender exists -> already connected
+
+                    let param = yassyui::Param{key: port_index, value: buf as f32};
                     let encoded = json::encode(&param).unwrap();
                     let message: Message = Message::text(encoded);
                     match sender.send_message(&message) {
@@ -101,7 +99,7 @@ impl Descriptor {
                         }
                     }
                 }
-                _ => {} // cannot happen if .conntected = true ?
+                _ => {} 
             };
         }
     }
@@ -184,18 +182,16 @@ pub extern "C" fn ui_idle(handle: lv2::LV2UIHandle) -> libc::c_int {
     // println!("host calls idle()");
     let ui = handle as *mut yassyui::yassyui;
     unsafe {
-        // if !(*ui).connected {
-
         match (*ui).receiver {
 
-            // already connected
-            // Loop over 5 incoming ws messages. Will block if not
-            // breaking out. If one uses no loop at all, latency is 
-            // high. 
-            // TODO: This will depend on the frequency with which
-            // ui_idle() is called by host.
             Some(ref mut receiver) => {
+                // receiver is present -> already connected
 
+                // Loop over 5 incoming ws messages. Will block if not
+                // breaking out. If one uses no loop at all, latency is 
+                // high. 
+                // TODO: This will depend on the frequency with which
+                // ui_idle() is called by host.
                 for message in receiver.incoming_messages().take(5) {
                     match message {
                         Ok(m) => {
@@ -217,11 +213,13 @@ pub extern "C" fn ui_idle(handle: lv2::LV2UIHandle) -> libc::c_int {
                 }
 
             }
-            // still disconnected
             _ => {
+                // still disconnected
+
                 match (*ui).server {
-                    // connect
+                    // server should exist since instantiation
                     Some(ref mut server) => {
+                        // connect
                         match server.accept() {
                             Ok(wsupgrade) => {
                                 wsupgrade.tcp_stream().set_nonblocking(true).expect("Cannot set non-blocking");
@@ -241,20 +239,13 @@ pub extern "C" fn ui_idle(handle: lv2::LV2UIHandle) -> libc::c_int {
                         }
                     }
                     _ => {
-                        panic!("Server doesn't exist. Don't know what happened.");
+                        panic!("YASSYUI PANIC: Server doesn't exist.");
                     }
 
                 }
 
             } 
         }
-                
-
-            
-
-        // } else {
-
-        // }
         return !(*ui).showing as libc::c_int;
     }
 }
