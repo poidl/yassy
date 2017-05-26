@@ -2,14 +2,18 @@
 extern crate libc;
 extern crate lv2;
 extern crate websocket;
-extern crate rustc_serialize;
+extern crate serde;
+extern crate serde_json;
+#[macro_use]
+extern crate serde_derive;
 
 mod yassyui;
 use std::mem;
 use std::ffi::CStr;
 use std::str;
 use std::ptr;
-use rustc_serialize::json;
+
+use serde_json::{Error};
 use websocket::Message;
 
 // Credits to Hanspeter Portner for explaining how ui:UI and kx:Widget work. See
@@ -88,7 +92,7 @@ impl Descriptor {
                     // sender exists -> already connected
 
                     let param = yassyui::Param{key: port_index, value: buf as f32};
-                    let encoded = json::encode(&param).unwrap();
+                    let encoded = serde_json::to_string(&param).unwrap();
                     let message: Message = Message::text(encoded);
                     match sender.send_message(&message) {
                         Ok(_) => (),
@@ -198,8 +202,8 @@ pub extern "C" fn ui_idle(handle: lv2::LV2UIHandle) -> libc::c_int {
                             let message: Message =m;
                             let vecu8 = message.payload.into_owned();
                             let mess = String::from_utf8(vecu8).unwrap();
-                            println!("message: {}", mess);
-                            let res = json::decode(&mess);
+                            println!("Client says: {}", mess);
+                            let res = param_from_string(&mess);
                             match res {
                                 Ok(param) => {
                                     yassyui::on_ws_receive((*ui).write, (*ui).controller, &param);
@@ -247,6 +251,16 @@ pub extern "C" fn ui_idle(handle: lv2::LV2UIHandle) -> libc::c_int {
             } 
         }
         return !(*ui).showing as libc::c_int;
+    }
+}
+
+fn param_from_string(mess: &String) -> Result<yassyui::Param, Error> {
+    match serde_json::from_str(mess) {
+        Ok(v) => {
+            let p: yassyui::Param = v;
+            Ok(p)
+        }
+        Err(err) => Err(err)
     }
 }
 

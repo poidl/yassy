@@ -8,9 +8,7 @@ use websocket::sender::Writer as wsWriter;
 use websocket::receiver::Reader as wsReader;
 // use std::mem;
 
-// Automatically generate `RustcDecodable` and `RustcEncodable` trait
-// implementations
-#[derive(RustcDecodable, RustcEncodable)]
+#[derive(Serialize, Deserialize)]
 pub struct Param {
     pub key: u32,
     pub value: f32,

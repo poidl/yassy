@@ -9,7 +9,9 @@ libc = "*"
 lv2 = { path = "../../lv2" }
 #websocket = "*"
 websocket = { path = "../../../rust-websocket" }
-rustc-serialize = "*"
+serde = "*"
+serde_json = "*"
+serde_derive = "*"
 
 [lib]
 crate-type = ["cdylib"]
