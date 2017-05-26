@@ -136,7 +136,8 @@ impl Cumsum for [f64] {
     }
 }
 
-const N: usize = 4 * (2700 - 1) + 1; // Formula: nt*(nppt-1)+1 as usize; nt is even, therefore N must be uneven
+// Formula: nt*(nppt-1)+1 as usize; nt is even, therefore N must be uneven
+const N: usize = 4 * (2700 - 1) + 1;
 const M: usize = 2 * (2700 - 1) + 1; // Half segment
 
 // blit_2t returns the right half of the full segment
@@ -154,14 +155,19 @@ pub fn blit_2t(fs: f64) -> [f64; M] {
 }
 
 pub fn blit_4t(fs: f64) -> [f64; N] {
-    // Bandlimited impulse segment for sawtooth with BLIT (bandlimited impulse train) approach. References:
-    // Stilson, T. and Smith, J., 1996: Alias-free digital synthesis of classic analog waveforms. Proc. International Computer Music Conference
-    // Frei, B.: Digital sound generation. Institute for Computer Music and Sound Technology (ICST) Zurich University of the Arts.
+    // Bandlimited impulse segment for sawtooth with BLIT (bandlimited
+    // impulse train) approach. References:
+    // Stilson, T. and Smith, J., 1996: Alias-free digital synthesis of
+    // classic analog waveforms. Proc. International Computer Music
+    // Conference
+    // Frei, B.: Digital sound generation. Institute for Computer Music
+    // and Sound Technology (ICST) Zurich University of the Arts.
     // See Frei's Fig. 17.
     // see also examples/blit.rs
     let nt: usize = 4;
     let nppt: usize = 2700;
-    // N needs to be a constant if we want to stay in the heap memory (2016/01/22)
+    // N needs to be a constant if we want to stay in the heap memory
+    // (2016/01/22)
     // Can't use variables nt and nppt
     if nt % 2 != 0 {
         panic!("nt is not even");

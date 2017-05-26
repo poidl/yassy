@@ -35,7 +35,8 @@ impl Lv2SynthPlugin {
             uris: Synthuris::new(),
             plugin: plugin::SynthPlugin::new(),
         };
-        // TODO: this is to avoid needing to access lv2plugin.plugin in lv2::LV2Descriptor::connect_port()
+        // TODO: this is to avoid needing to access lv2plugin.plugin
+        // in lv2::LV2Descriptor::connect_port()
         lv2plugin.output = lv2plugin.plugin.audio_out;
         lv2plugin
     }

@@ -11,7 +11,8 @@ fn mytest() {
 
     let mut pa = yassy::oscillator::PhaseAccumulator::new();
 
-    // set f0 to exactly half the sample rate and verify phase accumulation. Exactly two steps for one segment cycle.
+    // set f0 to exactly half the sample rate and verify phase
+    // accumulation. Exactly two steps for one segment cycle.
     pa.set_fs(44100f64);
     pa.reset(22500f64);
     // Check if index is initialized to -N

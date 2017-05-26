@@ -12,7 +12,9 @@ pub mod plugin;
 use std::ptr;
 use std::mem;
 
-// have to define new type. Otherwise error: "cannot define inherent impl for a type outside of the crate where the type is defined; define and implement a trait or new type instead"
+// have to define new type. Otherwise error: "cannot define inherent impl
+// for a type outside of the crate where the type is defined; define and
+// implement a trait or new type instead"
 struct Descriptor(lv2::LV2Descriptor);
 
 impl Descriptor {
@@ -118,7 +120,9 @@ pub extern "C" fn lv2_descriptor(index: i32) -> *const lv2::LV2Descriptor {
     if index != 0 {
         return ptr::null();
     } else {
-        // credits to ker on stackoverflow: http://stackoverflow.com/questions/31334356/static-struct-with-c-strings-for-lv2-plugin (duplicate) or http://stackoverflow.com/questions/25880043/creating-a-static-c-struct-containing-strings
+        // credits to ker on stackoverflow:
+        // http://stackoverflow.com/questions/31334356 (duplicate) or
+        // http://stackoverflow.com/questions/25880043
         let ptr = S.as_ptr() as *const libc::c_char;
         unsafe {
             DESC.uri = ptr;
