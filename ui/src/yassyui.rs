@@ -6,7 +6,7 @@ use websocket::Server as wsServer;
 use websocket::server::NoSslAcceptor;
 use websocket::sender::Writer as wsWriter;
 use websocket::receiver::Reader as wsReader;
-use std::mem;
+// use std::mem;
 
 // Automatically generate `RustcDecodable` and `RustcEncodable` trait
 // implementations
@@ -27,8 +27,8 @@ pub struct yassyui {
     // TODO: there is only one pair of sender and receiver, i.e. one connection
     // per plugin instance. If e.g. a second browser tab connects, it will
     // work but render the first browser tab unresponsive. Change this?
-    pub sender: wsWriter<wsTcpStream>,
-    pub receiver: wsReader<wsTcpStream>,
+    pub sender: Option<wsWriter<wsTcpStream>>,
+    pub receiver: Option<wsReader<wsTcpStream>>,
     pub server: Option<wsServer<NoSslAcceptor>>,
     pub connected: bool,
 }
@@ -53,7 +53,7 @@ impl yassyui {
 
                 println!("UI listening at {}.", server.local_addr().unwrap());
                 server.set_nonblocking(true).expect("Cannot set non-blocking");
-                unsafe {
+                // unsafe {
                     let ui = yassyui {
                         extwidget: lv2::LV2UIExternalUIWidget {
                             // Why "None"? Nullable function pointers. See
@@ -68,13 +68,13 @@ impl yassyui {
                         write: None,
                         showing: false,
                         // TODO: is it possible to use Option() here?
-                        sender: mem::uninitialized(),
-                        receiver: mem::uninitialized(),
+                        sender: None,
+                        receiver: None,
                         server: Some(server),
                         connected: false,
                     };
                     Ok(ui)
-                }
+                // }
             }
             _ => {
                 Err("YASSYUI ERROR: BINDING FAILED (ADDRESS IN USE?)")

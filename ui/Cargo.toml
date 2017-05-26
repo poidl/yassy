@@ -8,7 +8,7 @@ authors = ["poidl <hoitaus@gmail.com>"]
 libc = "*"
 lv2 = { path = "../../lv2" }
 #websocket = "*"
-websocket = { path = "../../../ghforks/rust-websocket" }
+websocket = { path = "../../../rust-websocket" }
 rustc-serialize = "*"
 
 [lib]
