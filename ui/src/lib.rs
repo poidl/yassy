@@ -62,7 +62,7 @@ impl Descriptor {
             }
             // default, e.g. if the port is already bound
             Err(e) => {
-                println!("YASSYUI ERROR: INSTANTIATION FAILED: {}", e);
+                println!("YASSYUI ERROR: INSTANTIATION FAILED: {}. REFUSE TO PANIC TO AVOID BRINGING DOWN THE HOST.", e);
                 ptr::null_mut()
             }
         }
@@ -239,7 +239,7 @@ pub extern "C" fn ui_idle(handle: lv2::LV2UIHandle) -> libc::c_int {
                         }
                     }
                     _ => {
-                        panic!("YASSYUI PANIC: Server doesn't exist.");
+                        println!("YASSYUI ERROR: SERVER DOESN'T EXIST. REFUSE TO PANIC TO AVOID BRINGING DOWN THE HOST.");
                     }
 
                 }
