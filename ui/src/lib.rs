@@ -208,7 +208,10 @@ pub extern "C" fn ui_idle(handle: lv2::LV2UIHandle) -> libc::c_int {
                                 Ok(param) => {
                                     yassyui::on_ws_receive((*ui).write, (*ui).controller, &param);
                                 }
-                                Err(err) => println!("Err: {}", err),
+                                Err(ref err) if err.is_syntax() => {
+                                        println!("YASSYUI ERROR: RECEIVED INVALID JSON: {}", mess);
+                                }
+                                Err(err) => println!("YASSYUI ERROR ON RECEIVING WEBSOCKET MESSAGE: {}", err),
                             }
                             
                         },
