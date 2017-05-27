@@ -1,12 +1,24 @@
+
 use libc;
 use lv2;
 use std::ptr;
+use websocket::Message;
 use websocket::stream::TcpStream as wsTcpStream;
 use websocket::Server as wsServer;
 use websocket::server::NoSslAcceptor;
 use websocket::sender::Writer as wsWriter;
 use websocket::receiver::Reader as wsReader;
 // use std::mem;
+
+// extern crate serde;
+// extern crate serde_json;
+// #[macro_use]
+// extern crate serde_derive;
+use serde_json;
+use serde_json::{Error};
+
+// Number of ports TODO: need only control ports here
+pub const NPORTS: usize = 5;
 
 #[derive(Serialize, Deserialize)]
 pub struct Param {
@@ -28,6 +40,7 @@ pub struct yassyui {
     pub sender: Option<wsWriter<wsTcpStream>>,
     pub receiver: Option<wsReader<wsTcpStream>>,
     pub server: Option<wsServer<NoSslAcceptor>>,
+    pub instantiation_params: [f32; NPORTS]
 }
 
 impl yassyui {
@@ -68,6 +81,7 @@ impl yassyui {
                         sender: None,
                         receiver: None,
                         server: Some(server),
+                        instantiation_params: [0f32; NPORTS]
                     };
                     Ok(ui)
                 // }
@@ -92,3 +106,26 @@ pub fn on_ws_receive(write: lv2::LV2UIWriteFunction,
     }
     // println!("f: {}", f);
 }
+
+pub fn send_param(sender: &mut wsWriter<wsTcpStream>, param: &Param) {
+    let encoded = serde_json::to_string(&param).unwrap();
+    let message: Message = Message::text(encoded);
+    match sender.send_message(&message) {
+        Ok(_) => {},
+        Err(e) => {
+            println!("Send Loop: {:?}", e);
+            let _ = sender.send_message(&Message::close());
+        }
+    }
+}
+
+pub fn param_from_string(mess: &String) -> Result<Param, Error> {
+    match serde_json::from_str(mess) {
+        Ok(v) => {
+            let p: Param = v;
+            Ok(p)
+        }
+        Err(err) => Err(err)
+    }
+}
+

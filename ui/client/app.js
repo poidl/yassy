@@ -1,26 +1,26 @@
 window.onload = function () {
 
-  var but = document.getElementById('buttonsend');
-  but.addEventListener('click', but_send, false);
-
-  // var socket = new WebSocket('ws://echo.websocket.org');
   var socket = new WebSocket('ws://127.0.0.1:55555');
   socket.onopen = function (event) {
     console.log("conntection established ...")
-    socket.send("hoitaus");
   };
   socket.onmessage = function (event) {
     var message = event.data;
-    console.log(message)
+    // console.log(message)
     var param = JSON.parse(message)
-    $("#slider").slider("value", param.value);
     console.log(param);
+    switch (param.key) {
+      case 2:
+        $("#slider").slider("value", param.value);
+        break;
+      case 3:
+        $("#checkbox-1").prop("checked", param.value).checkboxradio('refresh')
+        break;
+      case 4:
+        $("#checkbox-2").prop("checked", param.value).checkboxradio('refresh')
+        break;
+    }
   };
-
-  function but_send() {
-    socket.send("hoitaus");
-    console.log("clicked");
-  }
 
   $(function () {
     $("#slider").slider({
@@ -37,4 +37,36 @@ window.onload = function () {
       }
     });
   });
+
+
+  $( function() {
+    $( "input" ).checkboxradio();
+  } );
+
+  $('#checkbox-1').click(function () {
+    v = 0
+    if ($('#checkbox-1').prop('checked')) {
+        v = 1  
+    }
+    console.log("sending: " + v);
+    var param = {
+      key: 3,
+      value: v
+    };
+    socket.send(JSON.stringify(param));
+  });
+  $('#checkbox-2').click(function () {
+    v = 0
+    if ($('#checkbox-2').prop('checked')) {
+        v = 1  
+    }
+    console.log("sending: " + v);
+    var param = {
+      key: 4,
+      value: v
+    };
+    socket.send(JSON.stringify(param));
+  });
+
+
 };

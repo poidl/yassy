@@ -13,7 +13,6 @@ use std::ffi::CStr;
 use std::str;
 use std::ptr;
 
-use serde_json::{Error};
 use websocket::Message;
 
 // Credits to Hanspeter Portner for explaining how ui:UI and kx:Widget work. See
@@ -92,18 +91,11 @@ impl Descriptor {
                     // sender exists -> already connected
 
                     let param = yassyui::Param{key: port_index, value: buf as f32};
-                    let encoded = serde_json::to_string(&param).unwrap();
-                    let message: Message = Message::text(encoded);
-                    match sender.send_message(&message) {
-                        Ok(_) => (),
-                        Err(e) => {
-                            println!("Send Loop: {:?}", e);
-                            let _ = sender.send_message(&Message::close());
-                            return;
-                        }
-                    }
+                    yassyui::send_param(sender, &param)
                 }
-                _ => {} 
+                _ => {
+                    (*yas).instantiation_params[port_index as usize] = buf as f32;
+                    } 
             };
         }
     }
@@ -203,7 +195,7 @@ pub extern "C" fn ui_idle(handle: lv2::LV2UIHandle) -> libc::c_int {
                             let vecu8 = message.payload.into_owned();
                             let mess = String::from_utf8(vecu8).unwrap();
                             println!("Client says: {}", mess);
-                            let res = param_from_string(&mess);
+                            let res = yassyui::param_from_string(&mess);
                             match res {
                                 Ok(param) => {
                                     yassyui::on_ws_receive((*ui).write, (*ui).controller, &param);
@@ -232,7 +224,14 @@ pub extern "C" fn ui_idle(handle: lv2::LV2UIHandle) -> libc::c_int {
                                 wsupgrade.tcp_stream().set_nonblocking(true).expect("Cannot set non-blocking");
                                 match wsupgrade.accept() {
                                     Ok(client) => {
-                                        let (receiver, sender) = client.split().unwrap();
+
+                                        let (receiver, mut sender) = client.split().unwrap();
+
+                                        for (i, v) in (*ui).instantiation_params.iter().enumerate() {
+                                            let param = yassyui::Param{key: i as u32, value: (*v)};
+                                            yassyui::send_param(&mut sender, &param);
+                                        }
+                                        
                                         (*ui).receiver = Some(receiver);
                                         (*ui).sender= Some(sender);
                                         (*ui).server= None;
@@ -257,15 +256,6 @@ pub extern "C" fn ui_idle(handle: lv2::LV2UIHandle) -> libc::c_int {
     }
 }
 
-fn param_from_string(mess: &String) -> Result<yassyui::Param, Error> {
-    match serde_json::from_str(mess) {
-        Ok(v) => {
-            let p: yassyui::Param = v;
-            Ok(p)
-        }
-        Err(err) => Err(err)
-    }
-}
 
 #[no_mangle]
 pub extern "C" fn ui_show(handle: lv2::LV2UIHandle) -> libc::c_int {

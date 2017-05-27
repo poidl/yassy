@@ -3,7 +3,7 @@ extern crate libc;
 use synth;
 
 // Number of parameters
-const NPARAMS: usize = 3;
+pub const NPARAMS: usize = 3;
 
 pub enum ParamName {
     Gain,
