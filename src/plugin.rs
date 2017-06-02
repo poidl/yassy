@@ -19,8 +19,6 @@ pub trait HasFs {
 }
 
 pub struct SynthPlugin {
-    pub midi_in: *const u8,
-    pub audio_out: *mut f32,
     pub synth: synth::Synth,
     pub params: [*mut f32; NPARAMS],
     pub note_queue: Vec<i32>
@@ -29,8 +27,6 @@ pub struct SynthPlugin {
 impl SynthPlugin {
     pub fn new() -> SynthPlugin {
         let synth = SynthPlugin {
-            midi_in: &0u8,
-            audio_out: &mut 0f32,
             synth: synth::Synth::new(),
             params: [&mut 0.5f32, &mut 1f32, &mut 1f32],
             note_queue: vec![0; 10]
