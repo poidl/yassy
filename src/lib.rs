@@ -46,43 +46,7 @@ impl Descriptor {
     pub extern "C" fn run(instance: lv2::LV2Handle, n_samples: u32) {
         unsafe {
             let synth = instance as *mut lv2_plugin::Lv2SynthPlugin;
-            let uris = &mut (*synth).uris;
-            let seq = (*synth).in_port;
-            let output = (*synth).output;
-            // pointer to 1st event body
-            let mut ev: *const lv2::LV2AtomEvent = lv2::lv2_atom_sequence_begin(&(*seq).body);
-
-            let mut mq = false; // midi is queued
-            let mut ievent = 0;
-
-            for i in 0..n_samples {
-                // at i=0, search for the first midi event and get index
-                if !mq {
-                    while !lv2::lv2_atom_sequence_is_end(&(*seq).body, (*seq).atom.size, ev) {
-                        mq = (*ev).body.mytype == (*uris).midi_event;
-                        if !mq {
-                            ev = lv2::lv2_atom_sequence_next(ev);
-                        } else {
-                            ievent = (*ev).time_in_frames as u32;
-                            break;
-                        }
-                    }
-                }
-
-                // compare midi event index with i
-                if mq & (ievent == i) {
-                    let msg: &u8 = &*(ev.offset(1) as *const u8);
-                    (*synth).midievent(msg);
-                    // move to next event and set mq (midi is queued) to false
-                    ev = lv2::lv2_atom_sequence_next(ev);
-                    mq = false;
-                }
-
-                let amp = (*synth).get_amp();
-                // println!("Amp: {}", amp);
-                *output.offset(i as isize) = amp;
-
-            }
+            (*synth).run(n_samples)
         }
     }
 

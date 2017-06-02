@@ -1,6 +1,8 @@
 extern crate libc;
 
 use synth;
+use midi;
+use midi::*;
 
 // Number of parameters
 pub const NPARAMS: usize = 3;
@@ -21,6 +23,7 @@ pub struct SynthPlugin {
     pub audio_out: *mut f32,
     pub synth: synth::Synth,
     pub params: [*mut f32; NPARAMS],
+    pub note_queue: Vec<i32>
 }
 
 impl SynthPlugin {
@@ -30,11 +33,19 @@ impl SynthPlugin {
             audio_out: &mut 0f32,
             synth: synth::Synth::new(),
             params: [&mut 0.5f32, &mut 1f32, &mut 1f32],
+            note_queue: vec![0; 10]
         };
         if synth.params.len() != NPARAMS {
             panic!("Wrong number of parameters")
         }
         synth
+    }
+    pub fn midievent(&mut self, mm: midi::MidiMessage) {
+        if mm.noteon() {
+            self.noteon(mm.f0(), mm.vel())
+        } else if mm.noteoff() {
+            self.noteoff();
+        }
     }
     pub fn noteon(&mut self, f0: f32, vel: f32) {
         self.synth.noteon(f0, vel);

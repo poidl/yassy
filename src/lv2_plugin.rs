@@ -4,7 +4,6 @@ use std::ffi::CString;
 use std::ptr;
 use plugin;
 use midi;
-use midi::*;
 use std::str;
 
 pub struct Synthuris {
@@ -40,6 +39,28 @@ impl Lv2SynthPlugin {
         lv2plugin.output = lv2plugin.plugin.audio_out;
         lv2plugin
     }
+    pub fn run(&mut self, n_samples: u32) {
+        unsafe {
+            let midievent = self.uris.midi_event;
+            let sequence_iterator = (*self.in_port).into_iter();
+            let mut i = 0;
+            for ev in sequence_iterator.filter(|x| (*x).body.mytype == midievent) {
+                let msg: &u8 = &*((ev as *const lv2::LV2AtomEvent).offset(1) as *const u8);
+                self.plugin.midievent(msg as midi::MidiMessage);
+                let ievent = (*ev).time_in_frames as u32;
+                while i < ievent {
+                    let amp = self.plugin.get_amp();
+                    *self.output.offset(i as isize) = amp;
+                    i =  i+1;
+                }
+            }
+            while i < n_samples {
+                let amp = self.plugin.get_amp();
+                *self.output.offset(i as isize) = amp;
+                i =  i+1;
+            }
+        }
+    }
     pub fn seturis(&mut self) {
         unsafe {
             let s = "http://lv2plug.in/ns/ext/midi#MidiEvent";
@@ -55,30 +76,6 @@ impl Lv2SynthPlugin {
             _ => self.map_params(port, data),
         }
     }
-    pub fn midievent(&mut self, msg: &u8) {
-        let mm = msg as midi::MidiMessage;
-        if mm.noteon() {
-            self.plugin.noteon(mm.f0(), mm.vel())
-        } else if mm.noteoff() {
-            self.plugin.noteoff();
-        }
-    }
-    //     } else if mm.cc() {
-    //         let x = mm.cc_type();
-    //         unsafe {
-    //             match x {
-    //                 midi::cckind::channelvolume => {
-    //                     *(self.params[ParamName::Gain as usize]) = mm.cc_value()
-    //                 }
-    //                 _ => println!("Don't understand cc midi message", ),
-    //             }
-    //         }
-    //         println!("ccnr: {}", mm.ccnr());
-    //         println!("ccval: {}", mm.ccval());
-    //     } else {
-    //         println!("Don't understand midi message", );
-    //     }
-    // }
     pub fn set_fs(&mut self, fs: f64) {
         self.plugin.set_fs(fs);
     }
