@@ -3,6 +3,7 @@ extern crate libc;
 use synth;
 use midi;
 use midi::*;
+// use std::collections::VecDeque;
 
 // Number of parameters
 pub const NPARAMS: usize = 3;
@@ -20,21 +21,43 @@ pub trait HasFs {
 
 pub struct SynthPlugin {
     pub synth: synth::Synth,
+    pub audio_out: *mut f32,
     pub params: [*mut f32; NPARAMS],
-    pub note_queue: Vec<i32>
+    // pub note_queue: VecDeque<midi::MidiMessage>
 }
 
 impl SynthPlugin {
     pub fn new() -> SynthPlugin {
         let synth = SynthPlugin {
             synth: synth::Synth::new(),
+            audio_out: &mut 0f32,
             params: [&mut 0.5f32, &mut 1f32, &mut 1f32],
-            note_queue: vec![0; 10]
+            // note_queue: VecDeque::with_capacity(10)
         };
         if synth.params.len() != NPARAMS {
             panic!("Wrong number of parameters")
         }
         synth
+    }
+    pub fn process<'a, T>(&mut self, iter: T, n_samples: u32) 
+    where T: Iterator<Item=(u32, midi::MidiMessage<'a>)> {
+        unsafe {
+            let mut i = 0;
+            for (ievent, mm) in iter {
+                println!("Processing MIDI...");
+                while i < ievent {
+                    let amp = self.get_amp();
+                    *self.audio_out.offset(i as isize) = amp;
+                    i =  i+1;
+                }
+                self.midievent(mm);
+            }
+            while i < n_samples {
+                let amp = self.get_amp();
+                *self.audio_out.offset(i as isize) = amp;
+                i =  i+1;
+            }
+        }
     }
     pub fn midievent(&mut self, mm: midi::MidiMessage) {
         if mm.noteon() {

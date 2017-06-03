@@ -4,6 +4,7 @@ use std::ffi::CString;
 use std::ptr;
 use plugin;
 use midi;
+// use midi::*;
 use std::str;
 
 pub struct Synthuris {
@@ -40,22 +41,25 @@ impl Lv2SynthPlugin {
         unsafe {
             let midievent = self.uris.midi_event;
             let sequence_iterator = (*self.in_port).into_iter();
-            let mut i = 0;
-            for ev in sequence_iterator.filter(|x| (*x).body.mytype == midievent) {
-                let msg: &u8 = &*((ev as *const lv2::LV2AtomEvent).offset(1) as *const u8);
-                self.plugin.midievent(msg as midi::MidiMessage);
-                let ievent = (*ev).time_in_frames as u32;
-                while i < ievent {
-                    let amp = self.plugin.get_amp();
-                    *self.output.offset(i as isize) = amp;
-                    i =  i+1;
-                }
-            }
-            while i < n_samples {
-                let amp = self.plugin.get_amp();
-                *self.output.offset(i as isize) = amp;
-                i =  i+1;
-            }
+
+            // connect plugin
+            self.plugin.audio_out = self.output;
+
+            // filter midi events from atom sequence
+            let midievent_iterator = sequence_iterator
+                .filter(|x| (*x).body.mytype == midievent);
+
+            // create an iterator with tuple items (ievent, midimessage)
+            let ievent_midimessage = midievent_iterator
+                .map(|x| {
+                    (
+                        (*x).time_in_frames as u32,
+                        &*((x as *const lv2::LV2AtomEvent).offset(1) as *const u8) as midi::MidiMessage
+                    )
+                });
+            
+            // dispatch to plugin
+            self.plugin.process(ievent_midimessage, n_samples);
         }
     }
     pub fn seturis(&mut self) {
