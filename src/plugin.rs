@@ -3,7 +3,7 @@ extern crate libc;
 use synth;
 use midi;
 use midi::*;
-// use std::collections::VecDeque;
+use std::collections::VecDeque;
 
 // Number of parameters
 pub const NPARAMS: usize = 3;
@@ -23,7 +23,7 @@ pub struct SynthPlugin {
     pub synth: synth::Synth,
     pub audio_out: *mut f32,
     pub params: [*mut f32; NPARAMS],
-    // pub note_queue: VecDeque<midi::MidiMessage>
+    pub note_queue: VecDeque<[u8;3]>
 }
 
 impl SynthPlugin {
@@ -32,7 +32,7 @@ impl SynthPlugin {
             synth: synth::Synth::new(),
             audio_out: &mut 0f32,
             params: [&mut 0.5f32, &mut 1f32, &mut 1f32],
-            // note_queue: VecDeque::with_capacity(10)
+            note_queue: VecDeque::with_capacity(10)
         };
         if synth.params.len() != NPARAMS {
             panic!("Wrong number of parameters")
@@ -44,6 +44,7 @@ impl SynthPlugin {
         unsafe {
             let mut i = 0;
             for (ievent, mm) in iter {
+                println!("");
                 println!("Processing MIDI...");
                 while i < ievent {
                     let amp = self.get_amp();
@@ -60,10 +61,32 @@ impl SynthPlugin {
         }
     }
     pub fn midievent(&mut self, mm: midi::MidiMessage) {
+
         if mm.noteon() {
-            self.noteon(mm.f0(), mm.vel())
+            self.note_queue.push_back(*mm);
+            if self.note_queue.len() == 1 {
+                self.noteon(mm.f0(), mm.vel())
+            }
         } else if mm.noteoff() {
-            self.noteoff();
+            // check if this note (identified by number/frequency) is queued
+            let result = self.note_queue.iter().position(|x| (x as midi::MidiMessage).note_number() == mm.note_number());
+            match result {
+                Some(i) => {
+                    self.note_queue.remove(i);
+                    if i == 0 {
+                        self.noteoff();
+                        if self.note_queue.len() >= 1 {
+                            let mm = &self.note_queue[0].clone();
+                            self.noteon(mm.f0(), mm.vel())
+                        }
+                    }
+                }
+                _ => {}
+            }
+        }
+        for mm in &self.note_queue {
+            print!(" {}", mm.note_number());
+            println!("")
         }
     }
     pub fn noteon(&mut self, f0: f32, vel: f32) {
