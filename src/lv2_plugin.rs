@@ -54,7 +54,7 @@ impl Lv2SynthPlugin {
                 .map(|x| {
                     (
                         (*x).time_in_frames as u32,
-                        &*((x as *const lv2::LV2AtomEvent).offset(1) as *const u8) as midi::MidiMessage
+                        &*((x as *const lv2::LV2AtomEvent).offset(1) as *const [u8;3]) as midi::MidiMessage
                     )
                 });
             
