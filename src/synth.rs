@@ -16,11 +16,6 @@ impl Synth {
     pub fn noteon(&mut self, f0: f32, vel: f32) {
         self.voice.on = true;
         self.voice.f0 = f0;
-        // let a=-2.302587f32;
-        // let b=0.0953105f32;
-        // let c= 1f32/(b-a);
-        // plot((1/(log(1.01)-log(0.01)))*(log(y+0.01)-log(0.01)))
-        // self.voice.vel = c*( (mm.vel()+0.01).ln()-a );
         self.voice.vel = vel;
         self.voice.initialize();
     }
