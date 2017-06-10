@@ -18,7 +18,7 @@ use serde_json;
 use serde_json::{Error};
 
 // Number of ports TODO: need only control ports here
-pub const NPORTS: usize = 5;
+pub const NPORTS: usize = 6;
 
 #[derive(Serialize, Deserialize)]
 pub struct Param {

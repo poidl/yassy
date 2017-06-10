@@ -38,7 +38,7 @@ impl PhaseAccumulator {
         self.da = (f0 * self.fac_da as f64) as i32;
         // Set self.a to -2^(k-1). Could start at 0 instead, but this
         // corresponds to what Frei uses. Note that (N as i32) is negative
-        // and equal to i32::min_value(). Is there a one-liner?
+        // and equal to i32::min_value().
         self.a = 0i32;
         self.a = self.a.wrapping_add(N as i32);
     }

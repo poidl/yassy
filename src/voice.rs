@@ -6,8 +6,103 @@ pub trait IsVoice {
     fn get_amp(&mut self) -> f32;
     fn initialize(&mut self);
     fn cleanup(&mut self);
-    // fn reset(&mut self);
-    // fn getAmp(&self) -> f32;
+}
+
+pub enum ADSRSTATE {
+    Attack,
+    Decay,
+    Sustain,
+    Release,
+    Off
+}
+pub struct ADSR {
+    pub amp: f32,
+    pub pa: PhaseAccumulator,
+    pub state: ADSRSTATE,
+    pub f0: f64,
+}
+
+impl ADSR {
+    pub fn new() -> ADSR {
+        ADSR{pa: PhaseAccumulator::new(), amp: 0f32, state: ADSRSTATE::Attack, f0: 0.5f64}
+    }
+    pub fn initialize(&mut self, fs: f64) {
+        self.pa.set_fs(fs);
+        // f0=1, i.e. 1 cycle per second
+        self.pa.reset(self.f0);
+    }
+    pub fn step(&mut self) {
+        self.pa.step();
+
+        let attack = 0.2;
+        let decay = 0.2;
+        let sustain = 0.2;
+        let sustain_vel = 0.5;
+        let release = 1.0 - (attack + decay + sustain);
+        // let i range from 0 to 1.
+        let mut i = ((self.pa.normalize_index()+1f64)/2f64) as f32;
+        match self.state {
+            ADSRSTATE::Attack => {
+                let i = i/attack;
+                if i <= 1.0 {
+                    self.amp = i;
+                } else {
+                    self.state = ADSRSTATE::Decay;
+                }
+            }
+            _ => {}
+        }
+        match self.state {
+            ADSRSTATE::Decay => {
+                i = (i - attack)/decay;
+                // The first a's might actually be larger than the last
+                // attack value. No problem.
+                let a = 1.0 - i*(1.0-sustain_vel);
+                if a >= sustain_vel {
+                    self.amp = a;
+                } else {
+                    self.state = ADSRSTATE::Sustain;
+                }
+                return;
+            }
+            _ => {}
+        }
+        match self.state {
+            ADSRSTATE::Sustain => {
+                i = (i - attack - decay)/sustain;
+                if i <= 1.0 {
+                    return;
+                } else {
+                    self.state = ADSRSTATE::Release;
+                }
+                return;
+            }
+            _ => {}            
+        }
+        match self.state {
+            ADSRSTATE::Release => {
+                i = (i - attack - decay - sustain)/release;
+                let a = sustain_vel * (1.0 - i);
+                if i < 0.99 {
+                    self.amp = a;
+                } else {
+                    self.amp = 0.0;
+                    self.state = ADSRSTATE::Off;
+                }
+                return;
+            }
+            _ => {}
+        }
+        match self.state {
+            ADSRSTATE::Off => {}
+            _ => {}
+        }
+    }
+    pub fn reset(&mut self) {
+        self.amp = 0.0;
+        self.pa.reset(self.f0);
+        self.state = ADSRSTATE::Attack;
+    }
 }
 
 pub struct Voice {
@@ -15,6 +110,7 @@ pub struct Voice {
     pub vel: f32,
     pub on: bool,
     pub osc1: OscBLIT,
+    pub adsr: ADSR,
 }
 
 impl IsVoice for Voice {
@@ -24,20 +120,24 @@ impl IsVoice for Voice {
             vel: 0f32,
             on: false,
             osc1: OscBLIT::new(),
+            adsr: ADSR::new(),
         }
     }
     fn set_fs(&mut self, fs: f64) {
+        self.adsr.initialize(fs);
         self.osc1.set_fs(fs);
     }
     fn get_amp(&mut self) -> f32 {
         if self.on {
-            self.vel * self.osc1.get_amp()
+            self.adsr.step();
+            self.adsr.amp * self.vel * self.osc1.get_amp()
         } else {
             0.0
         }
 
     }
     fn initialize(&mut self) {
+        self.adsr.reset();
         self.osc1.reset(self.f0 as f64);
     }
     fn cleanup(&mut self) {

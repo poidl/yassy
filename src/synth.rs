@@ -20,7 +20,7 @@ impl Synth {
         self.voice.initialize();
     }
     pub fn noteoff(&mut self) {
-        self.voice.on = false;
+        // self.voice.on = false;
     }
     pub fn get_amp(&mut self) -> f32 {
         self.voice.get_amp()

@@ -23,7 +23,7 @@ pub struct SynthPlugin {
     pub synth: synth::Synth,
     pub audio_out: *mut f32,
     pub params: [*mut f32; NPARAMS],
-    pub note_queue: VecDeque<[u8;3]>
+    pub note_queue: VecDeque<[u8;3]>,
 }
 
 impl SynthPlugin {
@@ -32,7 +32,7 @@ impl SynthPlugin {
             synth: synth::Synth::new(),
             audio_out: &mut 0f32,
             params: [&mut 0.5f32, &mut 1f32, &mut 1f32],
-            note_queue: VecDeque::with_capacity(10)
+            note_queue: VecDeque::with_capacity(10),
         };
         if synth.params.len() != NPARAMS {
             panic!("Wrong number of parameters")
