@@ -1,3 +1,5 @@
+cargo build || exit 1
+./install.sh
 killall jalv
 sleep 0.2
 jalv -s http://example.org/yassy &

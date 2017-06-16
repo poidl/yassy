@@ -6,12 +6,14 @@ pub trait IsVoice {
     fn get_amp(&mut self) -> f32;
     fn initialize(&mut self);
     fn cleanup(&mut self);
+    fn noteoff(&mut self);
 }
 
 pub enum ADSRSTATE {
     Attack,
     Decay,
     Sustain,
+    Fade,
     Release,
     Off
 }
@@ -38,7 +40,8 @@ impl ADSR {
         let decay = 0.2;
         let sustain = 0.2;
         let sustain_vel = 0.5;
-        let release = 1.0 - (attack + decay + sustain);
+        let fade = 1.0 - (attack + decay + sustain);
+        let release = 0.2;
         // let i range from 0 to 1.
         let mut i = ((self.pa.normalize_index()+1f64)/2f64) as f32;
         match self.state {
@@ -73,15 +76,15 @@ impl ADSR {
                 if i <= 1.0 {
                     return;
                 } else {
-                    self.state = ADSRSTATE::Release;
+                    self.state = ADSRSTATE::Fade;
                 }
                 return;
             }
             _ => {}            
         }
         match self.state {
-            ADSRSTATE::Release => {
-                i = (i - attack - decay - sustain)/release;
+            ADSRSTATE::Fade => {
+                i = (i - attack - decay - sustain)/fade;
                 let a = sustain_vel * (1.0 - i);
                 if i < 0.99 {
                     self.amp = a;
@@ -92,6 +95,18 @@ impl ADSR {
                 return;
             }
             _ => {}
+        }
+        match self.state {
+            ADSRSTATE::Release => {
+                let i = i/release;
+                if i <= 1.0 {
+                    self.amp = (1.0-i)*self.amp;
+                } else {
+                    self.state = ADSRSTATE::Off;
+                }
+            }
+            _ => {
+            }
         }
         match self.state {
             ADSRSTATE::Off => {}
@@ -132,7 +147,16 @@ impl IsVoice for Voice {
             self.adsr.step();
             self.adsr.amp * self.vel * self.osc1.get_amp()
         } else {
-            0.0
+            match self.adsr.state {
+                ADSRSTATE::Release => {
+                    self.adsr.pa.reset(self.adsr.f0);
+                    self.adsr.step();
+                    self.adsr.amp * self.vel * self.osc1.get_amp()
+                }
+                _ => {
+                    0.0
+                }
+            }
         }
 
     }
@@ -142,6 +166,10 @@ impl IsVoice for Voice {
     }
     fn cleanup(&mut self) {
         self.osc1.cleanup();
+    }
+    fn noteoff(&mut self) {
+        self.on = false;
+        self.adsr.state = ADSRSTATE::Release;
     }
     // self.osc1.reset(&mut self) {
     //     self.osc1.set_f0 = self.f0;
