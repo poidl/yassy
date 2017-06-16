@@ -8,6 +8,7 @@ pub mod lv2_plugin;
 pub mod synth;
 pub mod utils;
 pub mod plugin;
+pub mod adsr;
 
 use std::ptr;
 use std::mem;
