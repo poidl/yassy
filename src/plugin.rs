@@ -63,10 +63,8 @@ impl SynthPlugin {
     pub fn midievent(&mut self, mm: midi::MidiMessage) {
 
         if mm.noteon() {
-            self.note_queue.push_back(*mm);
-            if self.note_queue.len() == 1 {
-                self.noteon(mm.f0(), mm.vel())
-            }
+            self.note_queue.push_front(*mm);
+            self.noteon(mm.f0(), mm.vel())
         } else if mm.noteoff() {
             // check if this note (identified by number/frequency) is queued
             let result = self.note_queue.iter().position(|x| (x as midi::MidiMessage).note_number() == mm.note_number());
@@ -75,7 +73,7 @@ impl SynthPlugin {
                     self.note_queue.remove(i);
                     if i == 0 {
                         self.noteoff();
-                        if self.note_queue.len() >= 1 {
+                        if self.note_queue.len() > 0 {
                             let mm = &self.note_queue[0].clone();
                             self.noteon(mm.f0(), mm.vel())
                         }
