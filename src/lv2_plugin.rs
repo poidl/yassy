@@ -65,7 +65,7 @@ impl Lv2SynthPlugin {
                 });
             
             // dispatch to plugin
-            self.plugin.process(ievent_midimessage, n_samples);
+            self.plugin.update(ievent_midimessage, n_samples);
 
 
             // let timepositionevent = self.uris.time_position_event;

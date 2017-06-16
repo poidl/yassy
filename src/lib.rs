@@ -9,6 +9,7 @@ pub mod synth;
 pub mod utils;
 pub mod plugin;
 pub mod adsr;
+pub mod observer;
 
 use std::ptr;
 use std::mem;
