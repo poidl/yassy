@@ -1,4 +1,4 @@
-pub type MidiMessage<'a> = &'a [u8;3];
+pub type MidiMessage = [u8;3];
 
 pub enum CcKind {
     ChannelVolume,
@@ -20,7 +20,7 @@ pub trait MidiTranslate {
     // fn ccval(&self) -> u8;
 }
 
-impl<'a> MidiTranslate for MidiMessage<'a> {
+impl MidiTranslate for MidiMessage {
     fn noteon(&self) -> bool {
         self[0] & 0xf0 == 0x90
     }
