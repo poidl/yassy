@@ -3,18 +3,16 @@ extern crate midi;
 extern crate lv2;
 
 pub mod oscillator;
-// pub mod voice;
+pub mod voice;
 pub mod lv2_plugin;
-// pub mod synth;
+pub mod synth;
 pub mod utils;
-// pub mod plugin;
-// pub mod adsr;
+pub mod plugin;
+pub mod adsr;
 pub mod observer;
-pub mod types;
 
 use std::ptr;
 use std::mem;
-use oscillator::*;
 
 // have to define new type. Otherwise error: "cannot define inherent impl
 // for a type outside of the crate where the type is defined; define and
@@ -27,9 +25,7 @@ impl Descriptor {
                                   _bundle_path: *const libc::c_char,
                                   hostfeatures: *const (*const lv2::LV2Feature))
                                   -> lv2::LV2Handle {
-        unsafe {
 
-        let mut osc = Box::new(OscBLIT::new());
         let mut bx = Box::new(lv2_plugin::Lv2SynthPlugin::new());
         let featureptr = lv2::mapfeature(hostfeatures, "http://lv2plug.in/ns/ext/urid#map");
         match featureptr {
@@ -37,29 +33,10 @@ impl Descriptor {
             _ => return ptr::null_mut(),
         }
         bx.seturis();
-
-        let r1 = &mut*osc as *mut OscBLIT;
-        bx.midiMessage.observers.push(&mut *r1);
-        // connect()
-        // plugin.fs.observers.push(&mut plugin.synth);
-
-        // bx.set_fs(fs);
-
-        bx.fs.observers.push(&mut *r1);
-        bx.bufferpos.observers.push(&mut *r1);
-        bx.fs.update(types::fs(fs));
-        // println!{"********* a **********"}
-        bx.bufferpos.update(0u32);
-        // println!{"********* d **********"}
-        bx.in_port_synth = osc.buf;
-        // println!{"********* G **********"}
-
-
+        bx.set_fs(fs);
         let ptr = (&*bx as *const lv2_plugin::Lv2SynthPlugin) as *mut libc::c_void;
         mem::forget(bx);
-        mem::forget(osc);
         ptr
-        }
     }
 
     pub extern "C" fn connect_port(handle: lv2::LV2Handle, port: u32, data: *mut libc::c_void) {
@@ -69,7 +46,6 @@ impl Descriptor {
     pub extern "C" fn activate(_instance: lv2::LV2Handle) {}
 
     pub extern "C" fn run(instance: lv2::LV2Handle, n_samples: u32) {
-        // println!{"*********** RUN "}
         unsafe {
             let synth = instance as *mut lv2_plugin::Lv2SynthPlugin;
             (*synth).run(n_samples)
@@ -82,7 +58,7 @@ impl Descriptor {
 
         unsafe {
             let synth = instance as *mut lv2_plugin::Lv2SynthPlugin;
-            // (*synth).cleanup();
+            (*synth).cleanup();
             // ptr::read(instance as *mut Amp); // no need for this?
             libc::free(instance as lv2::LV2Handle)
         }

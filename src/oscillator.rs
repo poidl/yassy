@@ -1,11 +1,4 @@
 use utils;
-use types;
-
-use midi;
-use midi::*;
-use observer;
-use observer::*;
-use std::ptr;
 
 const N: u32 = 2147483648; // 2^31=2147483648;
 
@@ -13,7 +6,7 @@ pub struct PhaseAccumulator {
     // Half width of segment, i.e. 2^(k-1) with k=32.
     n: u32,
     // sample rate
-    fs: types::fs,
+    fs: f64,
     // current index. Note that the index cannot obtain the value n (since
     // it is an i32), but instead ranges between [-2^(k-1),2^(k-1)-1]
     pub a: i32,
@@ -27,15 +20,15 @@ impl PhaseAccumulator {
     pub fn new() -> PhaseAccumulator {
         PhaseAccumulator {
             n: 2147483648,
-            fs: types::fs(0f64),
+            fs: 0f64,
             a: 0i32,
             da: 0i32,
             fac_da: 0f64,
         }
     }
-    pub fn set_fs(&mut self, fs: types::fs) {
+    pub fn set_fs(&mut self, fs: f64) {
         self.fs = fs;
-        self.fac_da = 2f64 * self.n as f64 / fs.0;
+        self.fac_da = 2f64 * self.n as f64 / fs;
     }
     pub fn reset(&mut self, f0: f64) {
         // Set index increment of the phase accumulator. (f0/fs) is the
@@ -67,7 +60,7 @@ impl PhaseAccumulator {
 // **********************************************************
 
 pub trait Oscillator {
-    fn set_fs(&mut self, types::fs);
+    fn set_fs(&mut self, f64);
     fn reset(&mut self, f32);
     fn get_amp(&mut self) -> f32;
     fn cleanup(&mut self);
@@ -89,7 +82,7 @@ impl OscBasic {
 /// and cleanup(). Non-bandlimited, for testing only.
 
 impl Oscillator for OscBasic {
-    fn set_fs(&mut self, fs: types::fs) {
+    fn set_fs(&mut self, fs: f64) {
         self.pa.set_fs(fs)
     }
     fn reset(&mut self, f0: f32) {
@@ -128,7 +121,7 @@ pub struct OscBLIT {
     pub c: f64,
     pub d: f64,
     // sample rate
-    pub fs: types::fs,
+    pub fs: f64,
     // fundamental frequency
     pub f0: f64,
     // avoid unnecessary runtime multiplication
@@ -142,7 +135,6 @@ pub struct OscBLIT {
     pub pf_b0: f64,
     pub pf_a1: f64,
     pub d_old: f64,
-    pub buf: *mut f32
 }
 
 // Postfilter (Frei p. 17)
@@ -158,7 +150,7 @@ impl OscBLIT {
             m: M as u32,
             pa: PhaseAccumulator::new(),
             // sample rate
-            fs: types::fs(0f64),
+            fs: 0f64,
             c: 0f64,
             // avoid unnecessary runtime multiplication
             fac_i: 0f64,
@@ -178,20 +170,19 @@ impl OscBLIT {
             pf_b0: 1.538462f64,
             pf_a1: 0.538462f64,
             d_old: 0f64,
-            buf: &mut 0f32 as *mut f32
         }
     }
-    pub fn set_fs(&mut self, fs: types::fs) {
+    pub fn set_fs(&mut self, fs: f64) {
         self.pa.set_fs(fs);
         self.fs = fs;
-        println!("************* fs: {}", fs.0);
+        println!("************* fs: {}", fs);
         let c = 4 as f64 * self.pa.n as f64;
         // m*fs/c= m*fs/(4*n)
-        self.fac_i = self.m as f64 * fs.0 / c;
-        self.fac_alpha = c / fs.0;
-        self.fac_fn = 2f64 * self.pa.n as f64 / self.fs.0;
+        self.fac_i = self.m as f64 * fs / c;
+        self.fac_alpha = c / fs;
+        self.fac_fn = 2f64 * self.pa.n as f64 / self.fs;
 
-        self.blit_segment = utils::blit_2t(fs.0);
+        self.blit_segment = utils::blit_2t(fs);
 
     }
 
@@ -267,7 +258,7 @@ impl OscBLIT {
 }
 
 impl Oscillator for OscBLIT {
-    fn set_fs(&mut self, fs: types::fs) {
+    fn set_fs(&mut self, fs: f64) {
         self.set_fs(fs);
     }
     fn reset(&mut self, f0: f32) {
@@ -301,7 +292,7 @@ impl Oscillator for OscBLIT {
 // }
 
 // impl Oscillator for OscMulti {
-//     fn set_fs(&mut self, fs: types::fs) {
+//     fn set_fs(&mut self, fs: f64) {
 //         self.osc1.set_fs(fs);
 //         self.osc2.set_fs(fs);
 //     }
@@ -328,29 +319,3 @@ impl Oscillator for OscBLIT {
 //         self.osc2.cleanup();
 //     }
 // }
-
-impl Observer<MidiMessage> for OscBLIT {
-    fn next(&mut self, mm: midi::MidiMessage) {
- println!(" SETTING NOTE: {}", mm.f0());
-        if mm.noteon() {
-            self.reset(mm.f0() as f64);
-        }
-    }
-}
-
-impl Observer<types::fs> for OscBLIT {
-    fn next(&mut self, fs: types::fs) {
-        self.set_fs(fs);
-    }
-}
-impl Observer<u32> for OscBLIT {
-    fn next(&mut self, _pos: u32) {
-        unsafe {
-            // println!("******** UPDATEIN");
-            println!("******** UPDATEING BUFFER dfssd: {}", self.get_amp());
-            // self.buf = &mut self.get_amp() as *mut f32;
-            *self.buf = self.get_amp();
-            // println!("******** UPDATEING BUFFER: {}", *self.buf);
-        }
-    }
-}

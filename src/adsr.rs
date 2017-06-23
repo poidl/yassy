@@ -1,5 +1,4 @@
 use oscillator::*;
-use types;
 
 pub enum ADSRSTATE {
     Attack,
@@ -20,7 +19,7 @@ impl ADSR {
     pub fn new() -> ADSR {
         ADSR{pa: PhaseAccumulator::new(), amp: 0f32, state: ADSRSTATE::Attack, f0: 0.5f64}
     }
-    pub fn initialize(&mut self, fs: types::fs) {
+    pub fn initialize(&mut self, fs: f64) {
         self.pa.set_fs(fs);
         // f0=1, i.e. 1 cycle per second
         self.pa.reset(self.f0);

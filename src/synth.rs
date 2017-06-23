@@ -5,9 +5,7 @@ use midi;
 use midi::*;
 use observer;
 use observer::*;
-use types;
 use std::collections::VecDeque;
-use std::rc::Rc;
 
 // Number of parameters
 pub const NPARAMS: usize = 2;
@@ -20,11 +18,8 @@ pub enum ParamName {
 pub struct Synth {
     pub params: [*mut f32; NPARAMS],
     pub note_queue: VecDeque<[u8;3]>,
-    pub voice: Rc<voice::Voice>,
-    // pub observers: Vec<Box<Observer>>
-    pub note: Observable<(f32, f32)>,
-    pub fs: Observable<types::fs>,
-    pub noteoff: Observable<types::noteoff>,
+    // pub voice: voice::Voice,
+    pub observers: Vec<Box<Observer>>
 }
 
 impl Synth {
@@ -32,15 +27,10 @@ impl Synth {
         let mut s = Synth { 
             params: [&mut 1f32, &mut 1f32],
             note_queue: VecDeque::with_capacity(10),
-            voice: Rc::new(voice::Voice::new()),
-            note: Observable::new((0f32,0f32)),
-            fs: Observable::new(types::fs(0f64)),
-            noteoff: Observable::new(types::noteoff)
-            // observers: Vec::with_capacity(1)
+            // voice: voice::Voice::new() 
+            observers: Vec::with_capacity(1)
         };
-        s.note.observers.push(s.voice.clone());
-        s.fs.observers.push(s.voice.clone());
-        s.noteoff.observers.push(s.voice.clone());
+        s.observers.push(Box::new(voice::Voice::new()));
         s
     }
     // pub fn noteon(&mut self, f0: f32, vel: f32) {
@@ -52,25 +42,23 @@ impl Synth {
     // }
 }
 
-impl Observer<MidiMessage> for Synth {
+impl Observer for Synth {
     fn next(&mut self, mm: midi::MidiMessage) {
 
         if mm.noteon() {
-            self.note_queue.push_front(mm);
-            // self.notifyevent_noteon(mm.f0(), mm.vel())
-            self.note.update((mm.f0(), mm.vel()));
+            self.note_queue.push_front(*mm);
+            self.notifyevent_noteon(mm.f0(), mm.vel())
         } else if mm.noteoff() {
             // check if this note (identified by number/frequency) is queued
-            let result = self.note_queue.iter().position(|x| x.note_number() == mm.note_number());
+            let result = self.note_queue.iter().position(|x| (x as midi::MidiMessage).note_number() == mm.note_number());
             match result {
                 Some(i) => {
                     self.note_queue.remove(i);
                     if i == 0 {
-                        self.noteoff.update(types::noteoff);
+                        self.notifyevent_noteoff();
                         if self.note_queue.len() > 0 {
                             let mm = &self.note_queue[0].clone();
-                            // self.notifyevent_noteon(mm.f0(), mm.vel())
-                            self.note.update((mm.f0(), mm.vel()));
+                            self.notifyevent_noteon(mm.f0(), mm.vel())
                         }
                     }
                 }
@@ -82,44 +70,53 @@ impl Observer<MidiMessage> for Synth {
             println!("")
         }
     }
-}
-
-
-impl Observer<types::fs> for Synth {
-    fn next(&mut self, fs: types::fs) {
-        self.fs.update(fs);
+    fn next_fs(&mut self, fs: f64) {
+        self.notifyevent_fs(fs);
+    }
+    fn next_blit(&mut self, blit: bool) {
+        self.notifyevent_blit(blit)
+    }
+    fn next_postfilter(&mut self, pf: bool) {
+        self.notifyevent_postfilter(pf);
+    }
+    fn get_amp(&mut self) -> f32 {
+        (*self.observers[0]).get_amp()
+    }
+    fn cleanup(&mut self) {
+        (*self.observers[0]).cleanup();
+    }
+    fn next_noteon(&mut self, f0: f32, vel: f32) {
+        self.notifyevent_noteon(f0,vel)
+    }
+    fn next_noteoff(&mut self) {
+        self.notifyevent_noteoff()
     }
 }
 
 impl Synth {
-    pub fn next_blit(&mut self, blit: bool) {
-        self.notifyevent_blit(blit)
+    pub fn notifyevent_noteon(&mut self, f0: f32, vel: f32) {
+        for o in &mut self.observers {
+            o.next_noteon(f0, vel)
+        }
     }
-    pub fn next_postfilter(&mut self, pf: bool) {
-        self.notifyevent_postfilter(pf);
+    pub fn notifyevent_noteoff(&mut self) {
+        for o in &mut self.observers {
+            o.next_noteoff()
+        }
     }
-    pub fn get_amp(&mut self) -> f32 {
-        self.voice.get_amp()
+    pub fn notifyevent_fs(&mut self, fs: f64) {
+        for o in &mut self.observers {
+            o.next_fs(fs)
+        }
     }
-    pub fn cleanup(&mut self) {
-        self.voice.cleanup();
-    }
-    // fn next_noteoff(&mut self) {
-    //     self.notifyevent_noteoff()
-    // }
-//     pub fn notifyevent_noteoff(&mut self) {
-//         for o in &mut self.observers {
-//             o.next_noteoff()
-//         }
-//     }
     pub fn notifyevent_blit(&mut self, blit: bool) {
-        // for o in &mut self.observers {
-            // self.voice.next_blit(blit)
-        // }
+        for o in &mut self.observers {
+            o.next_blit(blit)
+        }
     }
     pub fn notifyevent_postfilter(&mut self, pf: bool) {
-        // for o in &mut self.observers {
-        //     o.next_postfilter(pf)
-        // }
+        for o in &mut self.observers {
+            o.next_postfilter(pf)
+        }
     }
 }
