@@ -43,7 +43,6 @@ impl Descriptor {
 
         let r1 = &mut*osc as *mut OscBLIT;
         bx.midiMessage.observers.push(&mut *r1);
-        // connect()
         // plugin.fs.observers.push(&mut plugin.synth);
 
         // bx.set_fs(fs);
