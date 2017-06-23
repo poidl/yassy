@@ -28,10 +28,12 @@ impl Descriptor {
                                   hostfeatures: *const (*const lv2::LV2Feature))
                                   -> lv2::LV2Handle {
         unsafe {
-        let mut buf = Box::new(0f32);
-        let b1 = &mut*buf as *mut f32;
+        let mut buf1 = Box::new(0f32);
+        let mut buf2 = Box::new(0f32);
+        let mut b1 = &mut*buf1 as *mut f32;
+        let mut b2 = &mut*buf2 as *mut f32;
         let mut osc = Box::new(OscBLIT::new(&mut*b1));
-        let mut bx = Box::new(lv2_plugin::Lv2SynthPlugin::new());
+        let mut bx = Box::new(lv2_plugin::Lv2SynthPlugin::new(&mut*b2));
         let featureptr = lv2::mapfeature(hostfeatures, "http://lv2plug.in/ns/ext/urid#map");
         match featureptr {
             Ok(fp) => bx.map = fp as *mut lv2::LV2UridMap,
@@ -52,14 +54,18 @@ impl Descriptor {
         // println!{"********* a **********"}
         bx.bufferpos.update(0u32);
         // println!{"********* d **********"}
-        bx.in_port_synth = osc.buf;
+        // let mut bb2 = bx.in_port_synth as *mut f32;
+        let mut bb1 = osc.buf as *mut f32;
+        bx.in_port_synth = &mut *bb1;
+        // bb2 = bb1;
         // println!{"********* G **********"}
 
 
         let ptr = (&*bx as *const lv2_plugin::Lv2SynthPlugin) as *mut libc::c_void;
         mem::forget(bx);
         mem::forget(osc);
-        mem::forget(buf);
+        mem::forget(buf1);
+        mem::forget(buf2);
         ptr
         }
     }

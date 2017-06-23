@@ -32,14 +32,14 @@ pub struct Lv2SynthPlugin<'a> {
     pub in_port_time: *const lv2::LV2AtomSequence,
     pub uris: Synthuris,
     // pub plugin: plugin::SynthPlugin<'a>,
-    pub in_port_synth: *mut f32,
+    pub in_port_synth: &'a mut f32,
     pub bufferpos: Observable<'a, u32>,
     pub midiMessage: Observable<'a, midi::MidiMessage>,
     pub fs: Observable<'a, types::fs>,
 }
 
 impl<'a> Lv2SynthPlugin<'a> {
-    pub fn new() -> Lv2SynthPlugin<'a> {
+    pub fn new(buf: &'a mut f32) -> Lv2SynthPlugin<'a> {
         let lv2plugin = Lv2SynthPlugin {
             map: ptr::null_mut(),
             in_port: ptr::null(),
@@ -47,7 +47,7 @@ impl<'a> Lv2SynthPlugin<'a> {
             in_port_time: ptr::null(),
             uris: Synthuris::new(),
             // plugin: plugin::SynthPlugin::new(),
-            in_port_synth: ptr::null_mut(), 
+            in_port_synth: buf, 
             bufferpos: Observable::new(0u32),        
             midiMessage: Observable::new([0u8,0u8,0u8]),
             fs: Observable::new(types::fs(0f64)),
