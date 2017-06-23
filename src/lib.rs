@@ -28,8 +28,9 @@ impl Descriptor {
                                   hostfeatures: *const (*const lv2::LV2Feature))
                                   -> lv2::LV2Handle {
         unsafe {
-
-        let mut osc = Box::new(OscBLIT::new());
+        let mut buf = Box::new(0f32);
+        let b1 = &mut*buf as *mut f32;
+        let mut osc = Box::new(OscBLIT::new(&mut*b1));
         let mut bx = Box::new(lv2_plugin::Lv2SynthPlugin::new());
         let featureptr = lv2::mapfeature(hostfeatures, "http://lv2plug.in/ns/ext/urid#map");
         match featureptr {
@@ -58,6 +59,7 @@ impl Descriptor {
         let ptr = (&*bx as *const lv2_plugin::Lv2SynthPlugin) as *mut libc::c_void;
         mem::forget(bx);
         mem::forget(osc);
+        mem::forget(buf);
         ptr
         }
     }
