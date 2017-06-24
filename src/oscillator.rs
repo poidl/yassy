@@ -107,7 +107,7 @@ impl Oscillator for OscBasic {
 
 const M: usize = 2 * (2700 - 1) + 1;
 
-pub struct OscBLIT<'a> {
+pub struct OscBLIT {
     // We translate the fundamental frequency f0 from units 1/t to a
     // fraction "fn" of a wavetable with 2N lattice points. fn corresponds
     // to the number of points which are skipped when reading the wavetable,
@@ -142,7 +142,8 @@ pub struct OscBLIT<'a> {
     pub pf_b0: f64,
     pub pf_a1: f64,
     pub d_old: f64,
-    pub buf: &'a mut f32
+    // TODO: Producers allocate boxes?
+    pub buf: Box<f32>
 }
 
 // Postfilter (Frei p. 17)
@@ -152,8 +153,8 @@ pub struct OscBLIT<'a> {
 // y(n) = b0*x(n)-a1*y(n-1) = b0*x(n)-a1*d_old
 
 
-impl<'a> OscBLIT<'a> {
-    pub fn new(buf: &'a mut f32) -> OscBLIT<'a> {
+impl OscBLIT {
+    pub fn new() -> OscBLIT {
         OscBLIT {
             m: M as u32,
             pa: PhaseAccumulator::new(),
@@ -179,7 +180,7 @@ impl<'a> OscBLIT<'a> {
             pf_a1: 0.538462f64,
             d_old: 0f64,
             // buf: &mut 0f32 as *mut f32
-            buf: buf
+            buf: Box::new(0f32)
         }
     }
     pub fn set_fs(&mut self, fs: types::fs) {
@@ -267,7 +268,7 @@ impl<'a> OscBLIT<'a> {
     }
 }
 
-impl<'a> Oscillator for OscBLIT<'a> {
+impl Oscillator for OscBLIT {
     fn set_fs(&mut self, fs: types::fs) {
         self.set_fs(fs);
     }
@@ -330,7 +331,7 @@ impl<'a> Oscillator for OscBLIT<'a> {
 //     }
 // }
 
-impl<'a> Observer<MidiMessage> for OscBLIT<'a> {
+impl Observer<MidiMessage> for OscBLIT {
     fn next(&mut self, mm: midi::MidiMessage) {
  println!(" SETTING NOTE: {}", mm.f0());
         if mm.noteon() {
@@ -339,19 +340,18 @@ impl<'a> Observer<MidiMessage> for OscBLIT<'a> {
     }
 }
 
-impl<'a> Observer<types::fs> for OscBLIT<'a> {
+impl Observer<types::fs> for OscBLIT {
     fn next(&mut self, fs: types::fs) {
         self.set_fs(fs);
     }
 }
-impl<'a> Observer<u32> for OscBLIT<'a> {
+impl Observer<u32> for OscBLIT {
     fn next(&mut self, _pos: u32) {
         unsafe {
-            // println!("******** UPDATEIN");
-            // println!("******** UPDATEING BUFFER dfssd: {}", self.get_amp());
+            let amp = self.get_amp();
+            // println!("******** AMP: {}", amp);
             // self.buf = &mut self.get_amp() as *mut f32;
-            *self.buf = self.get_amp();
-            // println!("******** UPDATEING BUFFER: {}", *self.buf);
+            *self.buf = amp;
         }
     }
 }

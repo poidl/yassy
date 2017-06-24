@@ -7,7 +7,7 @@ pub mod oscillator;
 pub mod lv2_plugin;
 // pub mod synth;
 pub mod utils;
-// pub mod plugin;
+pub mod plugin;
 // pub mod adsr;
 pub mod observer;
 pub mod types;
@@ -28,49 +28,24 @@ impl Descriptor {
                                   hostfeatures: *const (*const lv2::LV2Feature))
                                   -> lv2::LV2Handle {
         unsafe {
-        let mut buf1 = Box::new(0f32);
-        let mut buf2 = Box::new(0f32);
-        let mut b1 = &mut*buf1 as *mut f32;
-        let mut b2 = &mut*buf2 as *mut f32;
-        let mut osc = Box::new(OscBLIT::new(&mut*b1));
-        let mut bx = Box::new(lv2_plugin::Lv2SynthPlugin::new(&mut*b2));
+
+        let mut bx = Box::new(lv2_plugin::Lv2Plugin::new());
         let featureptr = lv2::mapfeature(hostfeatures, "http://lv2plug.in/ns/ext/urid#map");
         match featureptr {
             Ok(fp) => bx.map = fp as *mut lv2::LV2UridMap,
             _ => return ptr::null_mut(),
         }
         bx.seturis();
+        bx.set_fs(fs);
 
-        let r1 = &mut*osc as *mut OscBLIT;
-        bx.midiMessage.observers.push(&mut *r1);
-        // plugin.fs.observers.push(&mut plugin.synth);
-
-        // bx.set_fs(fs);
-
-        bx.fs.observers.push(&mut *r1);
-        bx.bufferpos.observers.push(&mut *r1);
-        bx.fs.update(types::fs(fs));
-        // println!{"********* a **********"}
-        bx.bufferpos.update(0u32);
-        // println!{"********* d **********"}
-        // let mut bb2 = bx.in_port_synth as *mut f32;
-        let mut bb1 = osc.buf as *mut f32;
-        bx.in_port_synth = &mut *bb1;
-        // bb2 = bb1;
-        // println!{"********* G **********"}
-
-
-        let ptr = (&*bx as *const lv2_plugin::Lv2SynthPlugin) as *mut libc::c_void;
+        let ptr = (&*bx as *const lv2_plugin::Lv2Plugin) as *mut libc::c_void;
         mem::forget(bx);
-        mem::forget(osc);
-        mem::forget(buf1);
-        mem::forget(buf2);
         ptr
         }
     }
 
     pub extern "C" fn connect_port(handle: lv2::LV2Handle, port: u32, data: *mut libc::c_void) {
-        let synth: *mut lv2_plugin::Lv2SynthPlugin = handle as *mut lv2_plugin::Lv2SynthPlugin;
+        let synth: *mut lv2_plugin::Lv2Plugin = handle as *mut lv2_plugin::Lv2Plugin;
         unsafe { (*synth).connect_port(port, data) }
     }
     pub extern "C" fn activate(_instance: lv2::LV2Handle) {}
@@ -78,7 +53,7 @@ impl Descriptor {
     pub extern "C" fn run(instance: lv2::LV2Handle, n_samples: u32) {
         // println!{"*********** RUN "}
         unsafe {
-            let synth = instance as *mut lv2_plugin::Lv2SynthPlugin;
+            let synth = instance as *mut lv2_plugin::Lv2Plugin;
             (*synth).run(n_samples)
         }
     }
@@ -88,7 +63,7 @@ impl Descriptor {
     pub extern "C" fn cleanup(instance: lv2::LV2Handle) {
 
         unsafe {
-            let synth = instance as *mut lv2_plugin::Lv2SynthPlugin;
+            let synth = instance as *mut lv2_plugin::Lv2Plugin;
             // (*synth).cleanup();
             // ptr::read(instance as *mut Amp); // no need for this?
             libc::free(instance as lv2::LV2Handle)
