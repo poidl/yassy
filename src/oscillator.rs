@@ -339,6 +339,12 @@ impl Observer<MidiMessage> for OscBLIT {
         }
     }
 }
+impl Observer<types::f0> for OscBLIT {
+    fn next(&mut self, f0: types::f0) {
+ println!(" OSC RECEIVED FREQUENCY: {}", f0.0 as f32);
+        self.reset(f0.0 as f64);
+    }
+}
 
 impl Observer<types::fs> for OscBLIT {
     fn next(&mut self, fs: types::fs) {

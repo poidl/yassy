@@ -55,7 +55,7 @@ impl<'a> Lv2Plugin<'a> {
             // Can do this here because plugin is a Box. If plugin was allocated
             // on the stack, this would have to be done ouside of new()
             lv2plugin.bufferpos.observers.push(&mut *r1);
-            let mut bb1 = &mut *lv2plugin.plugin.audio_out as *mut f32;
+            let mut bb1 = &mut lv2plugin.plugin.audio_out as *mut f32;
             // let mut ga = &mut*lv2plugin.in_port_synth;
             lv2plugin.audio_out = bb1;
         }
@@ -106,16 +106,16 @@ impl<'a> Lv2Plugin<'a> {
                 while i < ievent {
                     // let amp = self.get_amp();
                     self.bufferpos.update(i);
-                    *self.audio_out.offset(i as isize) = *self.plugin.audio_out;
+                    *self.audio_out.offset(i as isize) = self.plugin.audio_out;
                     i =  i+1;
                 }
                 // self.notifyevent_midi(mm);
-                self.plugin.midiMessage.update(mm);
+                self.plugin.midi_message.update(mm);
             }
             while i < n_samples {
                 self.bufferpos.update(i);
                 // println!(" *self.audio_out.offset(i as isize): {}", *self.audio_out.offset(i as isize));
-                *self.audio_out.offset(i as isize) = *self.plugin.audio_out;
+                *self.audio_out.offset(i as isize) = self.plugin.audio_out;
                 // println!{"********* DEAD **********"}
                 i =  i+1;
             }

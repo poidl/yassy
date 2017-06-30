@@ -3,12 +3,12 @@ extern crate midi;
 extern crate lv2;
 
 pub mod oscillator;
-// pub mod voice;
+pub mod voice;
 pub mod lv2_plugin;
 // pub mod synth;
 pub mod utils;
 pub mod plugin;
-// pub mod adsr;
+pub mod adsr;
 pub mod observer;
 pub mod types;
 

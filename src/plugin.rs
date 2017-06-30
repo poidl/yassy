@@ -8,6 +8,8 @@ use observer::*;
 use types;
 use std::rc::Rc;
 use oscillator::*;
+use std::collections::VecDeque;
+use voice;
 
 // Number of parameters
 pub const NPARAMS: usize = 3;
@@ -24,39 +26,77 @@ pub trait HasFs {
 }
 
 pub struct Producers {
-    osc: Box<OscBLIT>
+    osc: Box<OscBLIT>,
+    osc2: Box<OscBLIT>,
+
 }
 
 // A plugin
 pub struct Plugin<'a> {
-    pub audio_out: *mut f32,
+    pub audio_out: f32,
     pub params: [*mut f32; NPARAMS],
     pub producers: Producers,
-    pub midiMessage: Observable<'a, midi::MidiMessage>,
+    pub voice: Box<voice::Voice<'a>>,
+    pub midi_message_processor: Box<MidiMessageProcessor<'a>>,
+    pub midi_message: Observable<'a, midi::MidiMessage>,
     pub fs: Observable<'a, types::fs>,
+    // pub mixer: Box<[f32; 5]>,
 }
+
+
 
 impl<'a> Plugin<'a> {
     pub fn new() -> Plugin<'a> {
         let mut plugin = Plugin {
-            audio_out: &mut 0f32,
+            audio_out: 0f32,
             params: [&mut 0.5f32, &mut 1f32, &mut 1f32],
-            producers: Producers{osc: Box::new(OscBLIT::new())},       
-            midiMessage: Observable::new([0u8,0u8,0u8]),
+            producers: Producers{
+                osc: Box::new(OscBLIT::new()),
+                osc2: Box::new(OscBLIT::new()),
+                },
+            voice: Box::new(voice::Voice::new()), 
+            midi_message_processor: Box::new(MidiMessageProcessor::new()),     
+            midi_message: Observable::new([0u8,0u8,0u8]),
             fs: Observable::new(types::fs(0f64)),
+            // mixer: Box::new([0f32; 5])
         };
         unsafe {
-            let r1 = &mut*plugin.producers.osc as *mut OscBLIT;
-            plugin.midiMessage.observers.push(&mut *r1);
-            plugin.fs.observers.push(&mut *r1);
-            let mut bb1 = &mut *plugin.producers.osc.buf as *mut f32;
-            plugin.audio_out = bb1;
+            let osc = &mut*plugin.producers.osc as *mut OscBLIT;
+            let osc2 = &mut*plugin.producers.osc2 as *mut OscBLIT;
+            let midiproc = &mut*plugin.midi_message_processor as *mut MidiMessageProcessor;
+            let voice = &mut*plugin.voice  as *mut voice::Voice;
+
+            plugin.midi_message.observers.push(&mut *midiproc);
+            plugin.midi_message_processor.noteon.observers.push(&mut *voice);
+            plugin.midi_message_processor.noteoff.observers.push(&mut *voice);
+            plugin.voice.f0.observers.push(&mut *osc);
+            plugin.voice.f1.observers.push(&mut *osc2);
+            plugin.fs.observers.push(&mut *osc);
+            plugin.fs.observers.push(&mut *osc2);
+
         }
         if plugin.params.len() != NPARAMS {
             panic!("Wrong number of parameters")
         }
         plugin
     }
+    // pub fn connect(&mut self) {
+    //     unsafe {
+    //         let osc = &mut*plugin.producers.osc as *mut OscBLIT;
+    //         let osc2 = &mut*plugin.producers.osc2 as *mut OscBLIT;
+    //         let midiproc = &mut*plugin.midi_message_processor as *mut MidiMessageProcessor;
+    //         let voice = &mut*plugin.voice  as *mut voice::Voice;
+
+    //         plugin.midi_message.observers.push(&mut *midiproc);
+    //         plugin.midi_message_processor.noteon.observers.push(&mut *voice);
+    //         plugin.midi_message_processor.noteoff.observers.push(&mut *voice);
+    //         plugin.voice.f0.observers.push(&mut *osc);
+    //         plugin.voice.f1.observers.push(&mut *osc2);
+    //         plugin.fs.observers.push(&mut *osc);
+    //         plugin.fs.observers.push(&mut *osc2);
+
+    //     }
+    // }
     // pub fn update<T>(&mut self, iter: T, n_samples: u32) 
     // where T: Iterator<Item=(u32, midi::MidiMessage)> {
     //     unsafe {
@@ -70,7 +110,7 @@ impl<'a> Plugin<'a> {
     //                 i =  i+1;
     //             }
     //             // self.notifyevent_midi(mm);
-    //             self.midiMessage.update(mm);
+    //             self.midi_message.update(mm);
     //         }
     //         while i < n_samples {
     //             let amp = self.get_amp();
@@ -123,7 +163,15 @@ impl<'a> Plugin<'a> {
     // pub fn cleanup(&mut self) {
     //     self.synth.cleanup();
     // }
+    pub fn mix(&mut self) {
+        let b1 = *self.producers.osc.buf;
+        let b2 = *self.producers.osc2.buf;
+        let vel1 = self.voice.vel;
+
+        self.audio_out = vel1*(b1+b2);
+    }
 }
+
 
 pub fn to_i8(paramval: f32) -> i8 {
     // let half = 127f32/2f32;
@@ -140,8 +188,60 @@ pub fn to_bool(paramval: f32) -> bool {
 
 impl<'a> Observer<u32> for Plugin<'a> {
     fn next(&mut self, pos: u32) {
-        self.producers.osc.next(pos)
+        self.producers.osc.next(pos);
+        self.producers.osc2.next(pos);
+        self.mix();
     }
 }
 
 
+pub struct MidiMessageProcessor<'a> {
+    pub note_queue: VecDeque<[u8;3]>,
+    pub noteon: Observable<'a, types::noteon>,
+    pub noteoff: Observable<'a, types::noteoff>,
+    // pub noteoff: Observable<'a, types::noteoff>,
+}
+
+// Observes MidiMessages, and emits noteon and noteoff observables
+impl<'a> MidiMessageProcessor<'a> {
+    pub fn new() -> MidiMessageProcessor<'a> {
+    let mut p = MidiMessageProcessor { 
+        note_queue: VecDeque::with_capacity(10),
+        noteon: Observable::new(types::noteon(0f32,0f32)),
+        noteoff: Observable::new(types::noteoff(0u8)),
+        // noteoff: Observable::new(types::noteoff)
+        };
+    p
+    }
+}
+
+impl<'a> Observer<MidiMessage> for MidiMessageProcessor<'a> {
+    fn next(&mut self, mm: midi::MidiMessage) {
+        if mm.noteon() {
+            self.note_queue.push_front(mm);
+            // self.notifyevent_noteon(mm.f0(), mm.vel())
+            self.noteon.update(types::noteon(mm.f0(), mm.vel()));
+        } else if mm.noteoff() {
+            // check if this note (identified by number/frequency) is queued
+            let result = self.note_queue.iter().position(|x| x.note_number() == mm.note_number());
+            match result {
+                Some(i) => {
+                    self.note_queue.remove(i);
+                    if i == 0 {
+                        self.noteoff.update(types::noteoff(mm.note_number()));
+                        if self.note_queue.len() > 0 {
+                            let mm = &self.note_queue[0].clone();
+                            // self.notifyevent_noteon(mm.f0(), mm.vel())
+                            self.noteon.update(types::noteon(mm.f0(), mm.vel()));
+                        }
+                    }
+                }
+                _ => {}
+            }
+        }
+        for mm in &self.note_queue {
+            print!(" {}", mm.note_number());
+            println!("")
+        }
+    }
+}
