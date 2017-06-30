@@ -37,6 +37,7 @@ pub struct Plugin<'a> {
     pub params: [*mut f32; NPARAMS],
     pub producers: Producers,
     pub voice: Box<voice::Voice<'a>>,
+    pub voice2: Box<voice::Voice<'a>>,
     pub midi_message_processor: Box<MidiMessageProcessor<'a>>,
     pub midi_message: Observable<'a, midi::MidiMessage>,
     pub fs: Observable<'a, types::fs>,
@@ -55,48 +56,38 @@ impl<'a> Plugin<'a> {
                 osc2: Box::new(OscBLIT::new()),
                 },
             voice: Box::new(voice::Voice::new()), 
+            voice2: Box::new(voice::Voice::new()), 
             midi_message_processor: Box::new(MidiMessageProcessor::new()),     
             midi_message: Observable::new([0u8,0u8,0u8]),
             fs: Observable::new(types::fs(0f64)),
             // mixer: Box::new([0f32; 5])
         };
-        unsafe {
-            let osc = &mut*plugin.producers.osc as *mut OscBLIT;
-            let osc2 = &mut*plugin.producers.osc2 as *mut OscBLIT;
-            let midiproc = &mut*plugin.midi_message_processor as *mut MidiMessageProcessor;
-            let voice = &mut*plugin.voice  as *mut voice::Voice;
-
-            plugin.midi_message.observers.push(&mut *midiproc);
-            plugin.midi_message_processor.noteon.observers.push(&mut *voice);
-            plugin.midi_message_processor.noteoff.observers.push(&mut *voice);
-            plugin.voice.f0.observers.push(&mut *osc);
-            plugin.voice.f1.observers.push(&mut *osc2);
-            plugin.fs.observers.push(&mut *osc);
-            plugin.fs.observers.push(&mut *osc2);
-
-        }
+        plugin.connect();
         if plugin.params.len() != NPARAMS {
             panic!("Wrong number of parameters")
         }
         plugin
     }
-    // pub fn connect(&mut self) {
-    //     unsafe {
-    //         let osc = &mut*plugin.producers.osc as *mut OscBLIT;
-    //         let osc2 = &mut*plugin.producers.osc2 as *mut OscBLIT;
-    //         let midiproc = &mut*plugin.midi_message_processor as *mut MidiMessageProcessor;
-    //         let voice = &mut*plugin.voice  as *mut voice::Voice;
+    pub fn connect(&mut self) {
+        unsafe {
+            let osc = &mut*self.producers.osc as *mut OscBLIT;
+            let osc2 = &mut*self.producers.osc2 as *mut OscBLIT;
+            let midiproc = &mut*self.midi_message_processor as *mut MidiMessageProcessor;
+            let voice = &mut*self.voice  as *mut voice::Voice;
+            let voice2 = &mut*self.voice2  as *mut voice::Voice;
 
-    //         plugin.midi_message.observers.push(&mut *midiproc);
-    //         plugin.midi_message_processor.noteon.observers.push(&mut *voice);
-    //         plugin.midi_message_processor.noteoff.observers.push(&mut *voice);
-    //         plugin.voice.f0.observers.push(&mut *osc);
-    //         plugin.voice.f1.observers.push(&mut *osc2);
-    //         plugin.fs.observers.push(&mut *osc);
-    //         plugin.fs.observers.push(&mut *osc2);
+            self.midi_message.observers.push(&mut *midiproc);
+            self.midi_message_processor.noteon.observers.push(&mut *voice);
+            self.midi_message_processor.noteoff.observers.push(&mut *voice);
+            self.midi_message_processor.noteon.observers.push(&mut *voice2);
+            self.midi_message_processor.noteoff.observers.push(&mut *voice2);
+            self.voice.f0.observers.push(&mut *osc);
+            self.voice2.f0.observers.push(&mut *osc2);
+            self.fs.observers.push(&mut *osc);
+            self.fs.observers.push(&mut *osc2);
 
-    //     }
-    // }
+        }
+    }
     // pub fn update<T>(&mut self, iter: T, n_samples: u32) 
     // where T: Iterator<Item=(u32, midi::MidiMessage)> {
     //     unsafe {
@@ -167,8 +158,10 @@ impl<'a> Plugin<'a> {
         let b1 = *self.producers.osc.buf;
         let b2 = *self.producers.osc2.buf;
         let vel1 = self.voice.vel;
+        let vel2 = self.voice2.vel;
 
-        self.audio_out = vel1*(b1+b2);
+        // self.audio_out = vel1*(b1+b2);
+        self.audio_out = vel1*b1+ vel2*b2;
     }
 }
 
@@ -196,7 +189,9 @@ impl<'a> Observer<u32> for Plugin<'a> {
 
 
 pub struct MidiMessageProcessor<'a> {
-    pub note_queue: VecDeque<[u8;3]>,
+    pub note_queue: Vec<[u8;3]>,
+    // pub note_ev: Vec<Observable<'a, types::noteon>>,
+    // pub num: u8;
     pub noteon: Observable<'a, types::noteon>,
     pub noteoff: Observable<'a, types::noteoff>,
     // pub noteoff: Observable<'a, types::noteoff>,
@@ -206,9 +201,13 @@ pub struct MidiMessageProcessor<'a> {
 impl<'a> MidiMessageProcessor<'a> {
     pub fn new() -> MidiMessageProcessor<'a> {
     let mut p = MidiMessageProcessor { 
-        note_queue: VecDeque::with_capacity(10),
+        note_queue: Vec::with_capacity(10),
+        // note_ev: Vec::with_capacity(10),
+        // num: 0u8,
         noteon: Observable::new(types::noteon(0f32,0f32)),
         noteoff: Observable::new(types::noteoff(0u8)),
+        // noteon2: Observable::new(types::noteon(0f32,0f32)),
+        // noteoff2: Observable::new(types::noteoff(0u8)),
         // noteoff: Observable::new(types::noteoff)
         };
     p
@@ -218,8 +217,10 @@ impl<'a> MidiMessageProcessor<'a> {
 impl<'a> Observer<MidiMessage> for MidiMessageProcessor<'a> {
     fn next(&mut self, mm: midi::MidiMessage) {
         if mm.noteon() {
-            self.note_queue.push_front(mm);
-            // self.notifyevent_noteon(mm.f0(), mm.vel())
+            self.note_queue.push(mm);
+            // if self.note_ev.len() <= 2 {
+            //     self.note_ev.push(types::noteon(mm.f0(), mm.vel()));
+            // }
             self.noteon.update(types::noteon(mm.f0(), mm.vel()));
         } else if mm.noteoff() {
             // check if this note (identified by number/frequency) is queued
@@ -227,13 +228,11 @@ impl<'a> Observer<MidiMessage> for MidiMessageProcessor<'a> {
             match result {
                 Some(i) => {
                     self.note_queue.remove(i);
-                    if i == 0 {
+                    if i == self.note_queue.len() {
                         self.noteoff.update(types::noteoff(mm.note_number()));
-                        if self.note_queue.len() > 0 {
-                            let mm = &self.note_queue[0].clone();
-                            // self.notifyevent_noteon(mm.f0(), mm.vel())
+                        if let Some(mm) = self.note_queue.last() {
                             self.noteon.update(types::noteon(mm.f0(), mm.vel()));
-                        }
+                        }                        
                     }
                 }
                 _ => {}
