@@ -77,10 +77,10 @@ impl<'a> Plugin<'a> {
             let voice2 = &mut*self.voice2  as *mut voice::Voice;
 
             self.midi_message.observers.push(&mut *midiproc);
-            self.midi_message_processor.noteon.observers.push(&mut *voice);
-            self.midi_message_processor.noteoff.observers.push(&mut *voice);
-            self.midi_message_processor.noteon.observers.push(&mut *voice2);
-            self.midi_message_processor.noteoff.observers.push(&mut *voice2);
+            self.midi_message_processor.noteon[0].observers.push(&mut *voice);
+            self.midi_message_processor.noteoff[0].observers.push(&mut *voice);
+            self.midi_message_processor.noteon[1].observers.push(&mut *voice2);
+            self.midi_message_processor.noteoff[1].observers.push(&mut *voice2);
             self.voice.f0.observers.push(&mut *osc);
             self.voice2.f0.observers.push(&mut *osc2);
             self.fs.observers.push(&mut *osc);
@@ -196,9 +196,11 @@ pub struct MidiMessageProcessor<'a> {
     // pub playing: VecDeque<u8>,
     // pub playing: Vec<u8>,
     // pub num: u8;
-    pub synths: [Option<u8>; 3],
-    pub noteon: Observable<'a, types::noteon>,
-    pub noteoff: Observable<'a, types::noteoff>,
+    pub synths: [Option<[u8;3]>; 3],
+    pub synths_old: [Option<[u8;3]>; 3],
+    pub noteon: Vec<Observable<'a, types::noteon>>,
+    pub noteoff: Vec<Observable<'a, types::noteoff>>,
+    // pub noteon: Observable<'a, types::noteon>,
     // pub noteoff: Observable<'a, types::noteoff>,
 }
 
@@ -216,11 +218,21 @@ impl<'a> MidiMessageProcessor<'a> {
         // playing: Vec::with_capacity(NN),
         // num: 0u8,
         synths: [None, None, None],
-        noteon: Observable::new(types::noteon(0f32,0f32)),
-        noteoff: Observable::new(types::noteoff(0u8)),
-        // noteon2: Observable::new(types::noteon(0f32,0f32)),
-        // noteoff2: Observable::new(types::noteoff(0u8)),
-        // noteoff: Observable::new(types::noteoff)
+        synths_old: [None, None, None],
+        noteon: vec![
+            Observable::new(types::noteon(0f32,0f32)),
+            Observable::new(types::noteon(0f32,0f32)),
+            Observable::new(types::noteon(0f32,0f32)),
+            ],
+        noteoff: vec![
+            Observable::new(types::noteoff(0u8)),
+            Observable::new(types::noteoff(0u8)),
+            Observable::new(types::noteoff(0u8)),
+            ],
+        // noteon: [Observable::new(types::noteon(0f32,0f32)); NN],
+        // noteoff: [Observable::new(types::noteoff(0u8)); NN],
+        // noteon: Observable::new(types::noteon(0f32,0f32)),
+        // noteoff: Observable::new(types::noteoff(0u8)),
         };
     p
     }
@@ -229,9 +241,8 @@ impl<'a> MidiMessageProcessor<'a> {
         let mut index: Option<usize> = None;
         for (i, n) in self.synths.iter().enumerate() {
             match *n {
-                Some(note_number) => {
-                    println!("i: {}", i);
-                    let result = self.playing.iter().position(|x| x.note_number() == note_number);
+                Some(note) => {
+                    let result = self.playing.iter().position(|x| x.note_number() == note.note_number());
                     match result {
                         Some(j) => {}
                         _ => {
@@ -256,8 +267,8 @@ impl<'a> MidiMessageProcessor<'a> {
             // is the note already assigned to a synth
             let result = self.synths.iter().position(|x|
             match *x {
-                Some(note_number) => {
-                    mm.note_number() == note_number
+                Some(note) => {
+                    mm.note_number() == note.note_number()
                 }
                 _ => false
             }
@@ -279,7 +290,7 @@ impl<'a> MidiMessageProcessor<'a> {
                     match result {
                         // if there is a free slot, assign the note number
                         Some(i) => {
-                            self.synths[i] = Some(mm.note_number());
+                            self.synths[i] = Some(*mm);
                         }
                         _ => {
                             // TODO: find out why this sometimes panics (XRUNS, skipped midi note-off events?)
@@ -292,14 +303,32 @@ impl<'a> MidiMessageProcessor<'a> {
         println!("SYNTHS: ");
         for i in self.synths.iter() {
             match *i {
-                Some(note_number) => {
-                    println!("i: {} ", note_number)
+                Some(note) => {
+                    println!("i: {} ", note.note_number())
                 }
                 _ =>  println!("i: None ")
             }
             
         }
-
+        for (i, n) in self.synths.iter().enumerate() {
+            match *n {
+                Some(note) => {
+                    if note.note_number() != self.synths_old[i].note_number() {
+                        self.noteon[i].update(note)
+                    }
+                }
+                _ => {
+                    match self.synths_old[i] {
+                        Some(note) => {
+                            self.noteoff[i].update()
+                        }
+                    }
+                }
+            }
+            
+        }
+        self.synths_old = self.synths;
+        
     }
 }
 
@@ -334,17 +363,13 @@ impl<'a> Observer<MidiMessage> for MidiMessageProcessor<'a> {
                 _ => {}
             }
         }
-        // for mm in &self.note_stack {
-        //     print!(" {}", mm.note_number());
-        //     println!("")
-        // }
+
 
         match release {
             Some(mm) => {
                 let res = self.playing.iter().position(|x| x.note_number() == mm.note_number());
                 match res {
                     Some(i) => {
-                        // println!("*********************i: {}",i);
                         self.playing.remove(i);
                     }
                     _ => {}
@@ -357,12 +382,8 @@ impl<'a> Observer<MidiMessage> for MidiMessageProcessor<'a> {
 
         let len = self.note_stack.len() as i8;
         let i_most_recent = len - NN as i8 + 1i8;
-        // println!("i_most_recent: {}", i_most_recent);
         let mut i = len-1;
-        // while (i >= len - NN as i8) & (i <= len as i8 -1) {
         while (i >= len - NN as i8) & (i>=0) {
-            // if i+i_most_recent >= 0 {
-            // println!("i: {}", i);
             let mm = self.note_stack[i as usize];
             
             let res = self.playing.iter().position(|x| x.note_number() == mm.note_number());
@@ -382,7 +403,6 @@ impl<'a> Observer<MidiMessage> for MidiMessageProcessor<'a> {
             print!("PLAYING: {}", mm.note_number());
             println!("")
         }
-        // println!("Calling update");
         self.update_synths()
     }
 }
