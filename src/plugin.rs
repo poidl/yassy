@@ -189,21 +189,33 @@ impl<'a> Observer<u32> for Plugin<'a> {
 
 
 pub struct MidiMessageProcessor<'a> {
-    pub note_queue: Vec<[u8;3]>,
+    pub note_stack: Vec<[u8;3]>,
+    pub playing: VecDeque<[u8;3]>,
     // pub note_ev: Vec<Observable<'a, types::noteon>>,
+    pub released: Vec<u8>,
+    // pub playing: VecDeque<u8>,
+    // pub playing: Vec<u8>,
     // pub num: u8;
+    pub synths: [Option<u8>; 3],
     pub noteon: Observable<'a, types::noteon>,
     pub noteoff: Observable<'a, types::noteoff>,
     // pub noteoff: Observable<'a, types::noteoff>,
 }
 
+const NN: usize = 3;
+
 // Observes MidiMessages, and emits noteon and noteoff observables
 impl<'a> MidiMessageProcessor<'a> {
     pub fn new() -> MidiMessageProcessor<'a> {
-    let mut p = MidiMessageProcessor { 
-        note_queue: Vec::with_capacity(10),
+    let p = MidiMessageProcessor { 
+        note_stack: Vec::with_capacity(10),
+        playing: VecDeque::with_capacity(NN),
         // note_ev: Vec::with_capacity(10),
+        released: Vec::with_capacity(NN),
+        // playing: VecDeque::with_capacity(3),
+        // playing: Vec::with_capacity(NN),
         // num: 0u8,
+        synths: [None, None, None],
         noteon: Observable::new(types::noteon(0f32,0f32)),
         noteoff: Observable::new(types::noteoff(0u8)),
         // noteon2: Observable::new(types::noteon(0f32,0f32)),
@@ -212,35 +224,165 @@ impl<'a> MidiMessageProcessor<'a> {
         };
     p
     }
-}
-
-impl<'a> Observer<MidiMessage> for MidiMessageProcessor<'a> {
-    fn next(&mut self, mm: midi::MidiMessage) {
-        if mm.noteon() {
-            self.note_queue.push(mm);
-            // if self.note_ev.len() <= 2 {
-            //     self.note_ev.push(types::noteon(mm.f0(), mm.vel()));
-            // }
-            self.noteon.update(types::noteon(mm.f0(), mm.vel()));
-        } else if mm.noteoff() {
-            // check if this note (identified by number/frequency) is queued
-            let result = self.note_queue.iter().position(|x| x.note_number() == mm.note_number());
-            match result {
-                Some(i) => {
-                    self.note_queue.remove(i);
-                    if i == self.note_queue.len() {
-                        self.noteoff.update(types::noteoff(mm.note_number()));
-                        if let Some(mm) = self.note_queue.last() {
-                            self.noteon.update(types::noteon(mm.f0(), mm.vel()));
-                        }                        
+    fn update_synths(&mut self) {
+        // set the note thats not played any more to None
+        let mut index: Option<usize> = None;
+        for (i, n) in self.synths.iter().enumerate() {
+            match *n {
+                Some(note_number) => {
+                    println!("i: {}", i);
+                    let result = self.playing.iter().position(|x| x.note_number() == note_number);
+                    match result {
+                        Some(j) => {}
+                        _ => {
+                            index = Some(i);
+                            break
+                        }
                     }
                 }
                 _ => {}
             }
+        
         }
-        for mm in &self.note_queue {
-            print!(" {}", mm.note_number());
+        match index {
+            Some(i) => {
+                println!("index:****{}", i);
+                self.synths[i] = None
+            }
+            _ => {}
+        }
+
+        for mm in self.playing.iter() {
+            // is the note already assigned to a synth
+            let result = self.synths.iter().position(|x|
+            match *x {
+                Some(note_number) => {
+                    mm.note_number() == note_number
+                }
+                _ => false
+            }
+            );
+            match result {
+                // if yes, do nothing
+                Some(i) => {}
+                // if no
+                _ => {
+                    // find the first free slot
+                    let result = self.synths.iter().position(|x|
+                        match *x {
+                            Some(note_number) => {
+                                false
+                            }
+                            _ => true
+                        }
+                    );
+                    match result {
+                        // if there is a free slot, assign the note number
+                        Some(i) => {
+                            self.synths[i] = Some(mm.note_number());
+                        }
+                        _ => {
+                            // TODO: find out why this sometimes panics (XRUNS, skipped midi note-off events?)
+                            // panic!{"No free slot."}
+                            }
+                    }
+                }
+            }
+        }
+        println!("SYNTHS: ");
+        for i in self.synths.iter() {
+            match *i {
+                Some(note_number) => {
+                    println!("i: {} ", note_number)
+                }
+                _ =>  println!("i: None ")
+            }
+            
+        }
+
+    }
+}
+
+impl<'a> Observer<MidiMessage> for MidiMessageProcessor<'a> {
+    fn next(&mut self, mm: midi::MidiMessage) {
+        let mut release: Option<midi::MidiMessage> = None;
+        if mm.noteon() {
+            self.note_stack.push(mm);
+            // if self.note_ev.len() <= 2 {
+            //     self.note_ev.push(types::noteon(mm.f0(), mm.vel()));
+            // }
+            // if let Some(n) = self.released.pop() {
+            //     self.playing.push(n);
+            // }
+            // self.noteon.update(types::noteon(mm.f0(), mm.vel()));
+        } else if mm.noteoff() {
+            // check if this note (identified by number/frequency) is queued
+            let result = self.note_stack.iter().position(|x| x.note_number() == mm.note_number());
+            match result {
+                Some(i) => {
+                    release = Some(self.note_stack.remove(i));
+
+                    // let res = self.playing.iter().position(|x| x.note_number() == mm.note_number());
+                    // match res {
+                    //     self.playing.remove(i);
+                    // }
+                        // self.noteoff.update(types::noteoff(mm.note_number()));
+                        // if let Some(mm) = self.note_stack.last() {
+                        //     self.noteon.update(types::noteon(mm.f0(), mm.vel()));
+                        // }                        
+                }
+                _ => {}
+            }
+        }
+        // for mm in &self.note_stack {
+        //     print!(" {}", mm.note_number());
+        //     println!("")
+        // }
+
+        match release {
+            Some(mm) => {
+                let res = self.playing.iter().position(|x| x.note_number() == mm.note_number());
+                match res {
+                    Some(i) => {
+                        // println!("*********************i: {}",i);
+                        self.playing.remove(i);
+                    }
+                    _ => {}
+                }
+
+                }
+            _ => {}
+
+        }
+
+        let len = self.note_stack.len() as i8;
+        let i_most_recent = len - NN as i8 + 1i8;
+        // println!("i_most_recent: {}", i_most_recent);
+        let mut i = len-1;
+        // while (i >= len - NN as i8) & (i <= len as i8 -1) {
+        while (i >= len - NN as i8) & (i>=0) {
+            // if i+i_most_recent >= 0 {
+            // println!("i: {}", i);
+            let mm = self.note_stack[i as usize];
+            
+            let res = self.playing.iter().position(|x| x.note_number() == mm.note_number());
+            match res {
+                Some(i) => {}
+                _ => {
+                    self.playing.push_back(mm);
+                    if self.playing.len() == NN+1 {
+                        self.playing.pop_front();
+                    }
+                }
+            }
+            i = i-1;
+        }
+        
+        for mm in &self.playing {
+            print!("PLAYING: {}", mm.note_number());
             println!("")
         }
+        // println!("Calling update");
+        self.update_synths()
     }
 }
