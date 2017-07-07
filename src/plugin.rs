@@ -30,6 +30,7 @@ pub trait HasFs {
 pub struct Producers {
     osc: Box<OscBLIT>,
     osc2: Box<OscBLIT>,
+    osc3: Box<OscBLIT>,
 
 }
 
@@ -40,6 +41,7 @@ pub struct Plugin<'a> {
     pub producers: Producers,
     pub voice: Box<voice::Voice<'a>>,
     pub voice2: Box<voice::Voice<'a>>,
+    pub voice3: Box<voice::Voice<'a>>,
     pub midi_message_processor: Box<MidiMessageProcessor<'a>>,
     pub midi_message: Observable<'a, midi::MidiMessage>,
     pub fs: Observable<'a, types::fs>,
@@ -56,9 +58,11 @@ impl<'a> Plugin<'a> {
             producers: Producers{
                 osc: Box::new(OscBLIT::new()),
                 osc2: Box::new(OscBLIT::new()),
+                osc3: Box::new(OscBLIT::new()),
                 },
             voice: Box::new(voice::Voice::new()), 
             voice2: Box::new(voice::Voice::new()), 
+            voice3: Box::new(voice::Voice::new()), 
             midi_message_processor: Box::new(MidiMessageProcessor::new()),     
             midi_message: Observable::new([0u8,0u8,0u8]),
             fs: Observable::new(types::fs(0f64)),
@@ -74,19 +78,25 @@ impl<'a> Plugin<'a> {
         unsafe {
             let osc = &mut*self.producers.osc as *mut OscBLIT;
             let osc2 = &mut*self.producers.osc2 as *mut OscBLIT;
+            let osc3 = &mut*self.producers.osc3 as *mut OscBLIT;
             let midiproc = &mut*self.midi_message_processor as *mut MidiMessageProcessor;
             let voice = &mut*self.voice  as *mut voice::Voice;
             let voice2 = &mut*self.voice2  as *mut voice::Voice;
+            let voice3 = &mut*self.voice3  as *mut voice::Voice;
 
             self.midi_message.observers.push(&mut *midiproc);
             self.midi_message_processor.noteon[0].observers.push(&mut *voice);
             self.midi_message_processor.noteoff[0].observers.push(&mut *voice);
             self.midi_message_processor.noteon[1].observers.push(&mut *voice2);
             self.midi_message_processor.noteoff[1].observers.push(&mut *voice2);
+            self.midi_message_processor.noteon[2].observers.push(&mut *voice3);
+            self.midi_message_processor.noteoff[2].observers.push(&mut *voice3);
             self.voice.f0.observers.push(&mut *osc);
             self.voice2.f0.observers.push(&mut *osc2);
+            self.voice3.f0.observers.push(&mut *osc3);
             self.fs.observers.push(&mut *osc);
             self.fs.observers.push(&mut *osc2);
+            self.fs.observers.push(&mut *osc3);
 
         }
     }
@@ -159,11 +169,13 @@ impl<'a> Plugin<'a> {
     pub fn mix(&mut self) {
         let b1 = *self.producers.osc.buf;
         let b2 = *self.producers.osc2.buf;
+        let b3 = *self.producers.osc3.buf;
         let vel1 = self.voice.vel;
         let vel2 = self.voice2.vel;
+        let vel3 = self.voice3.vel;
 
         // self.audio_out = vel1*(b1+b2);
-        self.audio_out = vel1*b1+ vel2*b2;
+        self.audio_out = vel1*b1+ vel2*b2 + vel3*b3;
     }
 }
 
@@ -185,6 +197,7 @@ impl<'a> Observer<u32> for Plugin<'a> {
     fn next(&mut self, pos: u32) {
         self.producers.osc.next(pos);
         self.producers.osc2.next(pos);
+        self.producers.osc3.next(pos);
         self.mix();
     }
 }

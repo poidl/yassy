@@ -13,7 +13,7 @@ pub struct MidiMessageProcessor<'a> {
     pub noteoff: Vec<Observable<'a, types::noteoff>>,
 }
 
-const NN: usize = 2;
+const NN: usize = 3;
 
 // Observes MidiMessages, and emits noteon and noteoff observables
 impl<'a> MidiMessageProcessor<'a> {
