@@ -11,6 +11,7 @@ pub mod plugin;
 pub mod adsr;
 pub mod observer;
 pub mod types;
+pub mod midiproc;
 
 use std::ptr;
 use std::mem;
