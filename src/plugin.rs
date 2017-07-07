@@ -204,7 +204,7 @@ pub struct MidiMessageProcessor<'a> {
     // pub noteoff: Observable<'a, types::noteoff>,
 }
 
-const NN: usize = 3;
+const NN: usize = 2;
 
 // Observes MidiMessages, and emits noteon and noteoff observables
 impl<'a> MidiMessageProcessor<'a> {
@@ -238,7 +238,7 @@ impl<'a> MidiMessageProcessor<'a> {
     }
     fn update_synths(&mut self) {
         // set the note thats not played any more to None
-        let mut index: Option<usize> = None;
+        let mut i_remove: Option<usize> = None;
         for (i, n) in self.synths.iter().enumerate() {
             match *n {
                 Some(note) => {
@@ -246,7 +246,7 @@ impl<'a> MidiMessageProcessor<'a> {
                     match result {
                         Some(j) => {}
                         _ => {
-                            index = Some(i);
+                            i_remove = Some(i);
                             break
                         }
                     }
@@ -255,9 +255,9 @@ impl<'a> MidiMessageProcessor<'a> {
             }
         
         }
-        match index {
+        match i_remove {
             Some(i) => {
-                println!("index:****{}", i);
+                println!("i_remove:****{}", i);
                 self.synths[i] = None
             }
             _ => {}
@@ -293,8 +293,9 @@ impl<'a> MidiMessageProcessor<'a> {
                             self.synths[i] = Some(*mm);
                         }
                         _ => {
+                            println!("self.playing.len(): {}", self.playing.len());
                             // TODO: find out why this sometimes panics (XRUNS, skipped midi note-off events?)
-                            // panic!{"No free slot."}
+                            panic!{"No free slot."}
                             }
                     }
                 }
@@ -313,15 +314,22 @@ impl<'a> MidiMessageProcessor<'a> {
         for (i, n) in self.synths.iter().enumerate() {
             match *n {
                 Some(note) => {
-                    if note.note_number() != self.synths_old[i].note_number() {
-                        self.noteon[i].update(note)
+                    match self.synths_old[i] {
+                        Some(note2) => {
+                            if note.note_number() != note2.note_number() {
+                                self.noteon[i].update(types::noteon(note.f0(), note.vel()))
+                            }
+
+                        }
+                        _ => {self.noteon[i].update(types::noteon(note.f0(), note.vel()))}
                     }
                 }
                 _ => {
                     match self.synths_old[i] {
                         Some(note) => {
-                            self.noteoff[i].update()
+                            self.noteoff[i].update(types::noteoff(note.note_number()))
                         }
+                        _ => {}
                     }
                 }
             }
