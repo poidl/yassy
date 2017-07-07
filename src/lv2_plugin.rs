@@ -119,7 +119,7 @@ impl<'a> Lv2Plugin<'a> {
                 // println!{"********* DEAD **********"}
                 i =  i+1;
             }
-            // println!(" *self.in_port_synth: {}", *self.plugin.audio_out);
+            // println!(" *self.in_port_synth: {}", self.plugin.audio_out);
         }
     }
     pub fn seturis(&mut self) {
