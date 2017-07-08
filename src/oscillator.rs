@@ -351,6 +351,11 @@ impl Observer<types::fs> for OscBLIT {
         self.set_fs(fs);
     }
 }
+impl Observer<types::blit> for OscBLIT {
+    fn next(&mut self, b: types::blit) {
+        self.use_blit = b.0;
+    }
+}
 impl Observer<u32> for OscBLIT {
     fn next(&mut self, _pos: u32) {
         unsafe {

@@ -7,27 +7,33 @@ use midi::*;
 
 pub struct MidiMessageProcessor<'a> {
     pub note_stack: Vec<[u8;3]>,
+    pub nvoices: usize,
+    pub unison: bool,
+    pub nnotes: usize,
     pub synths: [Option<[u8;3]>; 3],
     pub synths_old: [Option<[u8;3]>; 3],
     pub noteon: Vec<Observable<'a, types::noteon>>,
     pub noteoff: Vec<Observable<'a, types::noteoff>>,
 }
 
-const NN: usize = 3;
-
 // Observes MidiMessages, and emits noteon and noteoff observables
 impl<'a> MidiMessageProcessor<'a> {
     pub fn new() -> MidiMessageProcessor<'a> {
     let p = MidiMessageProcessor { 
         note_stack: Vec::with_capacity(10),
+        nvoices: 1,
+        unison: false,
+        nnotes: 1,
         synths: [None, None, None],
         synths_old: [None, None, None],
         noteon: vec![
             Observable::new(types::noteon(0f32,0f32)),
             Observable::new(types::noteon(0f32,0f32)),
             Observable::new(types::noteon(0f32,0f32)),
+            Observable::new(types::noteon(0f32,0f32)),
             ],
         noteoff: vec![
+            Observable::new(types::noteoff(0u8)),
             Observable::new(types::noteoff(0u8)),
             Observable::new(types::noteoff(0u8)),
             Observable::new(types::noteoff(0u8)),
@@ -41,7 +47,7 @@ impl<'a> MidiMessageProcessor<'a> {
         for (i, n) in self.synths.iter().enumerate() {
             match *n {
                 Some(note) => {
-                    let mut iter = self.note_stack.iter().rev().take(NN);        
+                    let mut iter = self.note_stack.iter().rev().take(self.nnotes);        
                     let result = iter.position(|x| x.note_number() == note.note_number());
                     match result {
                         Some(j) => {}
@@ -62,7 +68,7 @@ impl<'a> MidiMessageProcessor<'a> {
             }
             _ => {}
         }
-        let mut iter = self.note_stack.iter().rev().take(NN);
+        let mut iter = self.note_stack.iter().rev().take(self.nnotes);
         for mm in iter {
             // is the note already assigned to a synth
             let result = self.synths.iter().position(|x|
@@ -157,3 +163,44 @@ impl<'a> Observer<MidiMessage> for MidiMessageProcessor<'a> {
         self.update_synths()
     }
 }
+
+impl<'a> Observer<types::polyphony> for MidiMessageProcessor<'a> {
+    fn next(&mut self, p: types::polyphony) {
+        if p.0 {
+            if self.unison & (self.nvoices > 1) {
+                self.nnotes = self.nvoices / 2;
+                // println!("Polyphony on with union, nnotes = {}", self.nnotes);
+                return
+            }
+            self.nnotes = self.nvoices;
+            // println!("Polyphony on, union off, nnotes = {}", self.nnotes);
+            return
+        }
+        self.nnotes = 1;
+        // println!("Polyphony off");
+    }
+}
+
+impl<'a> Observer<types::nvoices> for MidiMessageProcessor<'a> {
+    fn next(&mut self, p: types::nvoices) {
+        self.nvoices = p.0;
+        // println!("Nvoices = {}", self.nvoices);
+    }
+}
+
+impl<'a> Observer<types::unison> for MidiMessageProcessor<'a> {
+    fn next(&mut self, p: types::unison) {
+        if p.0 {
+            self.unison = true;
+            return
+        }
+        self.unison = false
+        // println!("Unison = {}", self.unison);
+    }
+}
+
+// impl<'a> Observer<types::unison> for MidiMessageProcessor<'a> {
+//     fn next(&mut self, p: types::) {
+//         self.nvoices = p.0;
+//     }
+// }

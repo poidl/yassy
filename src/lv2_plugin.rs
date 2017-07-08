@@ -33,7 +33,7 @@ pub struct Lv2Plugin<'a> {
     pub map: *mut lv2::LV2UridMap,
     pub midi_in: *const lv2::LV2AtomSequence,
     pub audio_out: *mut f32,
-    pub in_port_time: *const lv2::LV2AtomSequence,
+    // pub in_port_time: *const lv2::LV2AtomSequence,
     pub uris: Synthuris,
     pub plugin: Box<plugin::Plugin<'a>>,
     pub bufferpos: Observable<'a, u32>
@@ -45,7 +45,7 @@ impl<'a> Lv2Plugin<'a> {
             map: ptr::null_mut(),
             midi_in: ptr::null(),
             audio_out: ptr::null_mut(),
-            in_port_time: ptr::null(),
+            // in_port_time: ptr::null(),
             uris: Synthuris::new(),
             plugin: Box::new(plugin::Plugin::new()),
             bufferpos: Observable::new(0u32), 
@@ -138,8 +138,8 @@ impl<'a> Lv2Plugin<'a> {
         match port {
             0 => self.midi_in = data as *const lv2::LV2AtomSequence,
             1 => self.audio_out = data as *mut f32,
-            2 => self.in_port_time = data as *const lv2::LV2AtomSequence,
-            // _ => self.map_params(port, data),
+            // 2 => self.in_port_time = data as *const lv2::LV2AtomSequence,
+            _ => self.map_params(port, data),
             _ => {},
         }
     }
@@ -148,19 +148,18 @@ impl<'a> Lv2Plugin<'a> {
     }
     // pub fn get_amp(&mut self) -> f32 {
     //     self.plugin.get_amp()
-    // }
-    // fn map_params(&mut self, port: u32, data: *mut libc::c_void) {
+    fn map_params(&mut self, port: u32, data: *mut libc::c_void) {
 
-    //     let nparams = self.plugin.params.len();
-    //     let iport = port - 3; //TODO: don't hardcode number of input/audio_out ports
-    //     if iport <= nparams as u32 - 1 {
-    //         println!("connecting port: {}", port);
-    //         // self.plugin.params[iport as usize] = data as *mut f32;
-    //         // println!("param: {}",  *(self.synth.params[0]));
-    //     } else {
-    //         panic!("Not a valid PortIndex: {}", iport)
-    //     }
-    // }
+        let nparams = self.plugin.params_ptr.len();
+        let iport = port - 2; //TODO: don't hardcode number of input/output ports
+        if iport <= nparams as u32 - 1 {
+            println!("connecting port: {}", port);
+            self.plugin.params_ptr[iport as usize] = data as *mut f32;
+            // println!("param: {}",  *(self.synth.params[0]));
+        } else {
+            panic!("Not a valid PortIndex: {}", iport)
+        }
+    }
     // pub fn cleanup(&mut self) {
     //     self.plugin.cleanup();
     // }
