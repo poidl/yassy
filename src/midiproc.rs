@@ -5,13 +5,15 @@ use observer::*;
 use midi;
 use midi::*;
 
+const NVOICES: usize = 4;
+
 pub struct MidiMessageProcessor<'a> {
     pub note_stack: Vec<[u8;3]>,
     pub nvoices: usize,
     pub unison: bool,
     pub nnotes: usize,
-    pub synths: [Option<[u8;3]>; 3],
-    pub synths_old: [Option<[u8;3]>; 3],
+    pub synths: [Option<[u8;3]>; NVOICES],
+    pub synths_old: [Option<[u8;3]>; NVOICES],
     pub noteon: Vec<Observable<'a, types::noteon>>,
     pub noteoff: Vec<Observable<'a, types::noteoff>>,
 }
@@ -24,8 +26,8 @@ impl<'a> MidiMessageProcessor<'a> {
         nvoices: 1,
         unison: false,
         nnotes: 1,
-        synths: [None, None, None],
-        synths_old: [None, None, None],
+        synths: [None; NVOICES],
+        synths_old: [None; NVOICES],
         noteon: vec![
             Observable::new(types::noteon(0f32,0f32)),
             Observable::new(types::noteon(0f32,0f32)),

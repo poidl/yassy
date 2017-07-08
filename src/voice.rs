@@ -37,6 +37,17 @@ impl<'a> Voice<'a> {
             f1: Observable::new(types::f0(0f32))
         }
     }
+    // pub fn connect() {
+    //     self.midi_message_processor.noteon[0].observers.push(&mut *voice);
+    //     self.midi_message_processor.noteoff[0].observers.push(&mut *voice);
+    //     self.midi_message_processor.noteon[1].observers.push(&mut *voice2);
+    //     self.midi_message_processor.noteoff[1].observers.push(&mut *voice2);
+    //     self.midi_message_processor.noteon[2].observers.push(&mut *voice3);
+    //     self.midi_message_processor.noteoff[2].observers.push(&mut *voice3);
+    //     self.midi_message_processor.noteon[3].observers.push(&mut *voice4);
+    //     self.midi_message_processor.noteoff[3].observers.push(&mut *voice4);
+    // }
+
 }
 
 impl<'a> Observer<types::noteon> for Voice<'a> {
