@@ -12,6 +12,7 @@ pub mod adsr;
 pub mod observer;
 pub mod types;
 pub mod midiproc;
+pub mod polyphony;
 
 use std::ptr;
 use std::mem;

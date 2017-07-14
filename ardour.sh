@@ -1,0 +1,2 @@
+killall jalv
+ardour5

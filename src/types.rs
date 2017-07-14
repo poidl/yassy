@@ -1,3 +1,5 @@
+pub const NOSC: usize = 4;
+
 #[derive(Copy, Clone)]
 pub struct fs(pub f64);
 
@@ -15,6 +17,12 @@ pub struct unison(pub bool);
 pub struct detune(pub f32);
 #[derive(Copy, Clone)]
 pub struct nvoices(pub usize);
+
+#[derive(Copy, Clone)]
+pub struct note2osc(pub [u8; NOSC]);
+
+#[derive(Copy, Clone)]
+pub struct maxnotes(pub u8);
 
 pub struct note((f32,f32));
 #[derive(Copy, Clone)]

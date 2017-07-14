@@ -12,9 +12,14 @@ use std::collections::VecDeque;
 use voice;
 use midiproc;
 use midiproc::*;
+use polyphony;
+use polyphony::*;
+use std::io;
+use std::io::Write;
 
 // Number of parameters
 pub const NPARAMS: usize = 5;
+pub const NOSC: usize = 4;
 
 pub enum ParamName {
     // Gain,
@@ -55,13 +60,15 @@ pub struct Plugin<'a> {
     // pub producers: Producers,
 
     pub oscillators: Vec<Box<OscBLIT>>,
-    pub voices: Vec<Box<voice::Voice<'a>>>,
+    // pub voices: Vec<Box<voice::Voice<'a>>>,
+    pub note2osc: [u8; NOSC],
     // pub voice2: Box<voice::Voice<'a>>,
     // pub voice3: Box<voice::Voice<'a>>,
     // pub voice4: Box<voice::Voice<'a>>,
 
     pub midi_message_processor: Box<MidiMessageProcessor<'a>>,
     pub midi_message: Observable<'a, midi::MidiMessage>,
+    pub poly: Box<Polyphony<'a>>,
 
     pub fs: Observable<'a, types::fs>,
     // pub mixer: Box<[f32; 5]>,
@@ -82,26 +89,22 @@ impl<'a> Plugin<'a> {
                 nvoices: Observable::new(types::nvoices(1)),
                 detune: Observable::new(types::detune(0f32)),
             },
-            // producers: Producers{
-            //     osc: Box::new(OscBLIT::new()),
-            //     osc2: Box::new(OscBLIT::new()),
-            //     osc3: Box::new(OscBLIT::new()),
-            //     osc4: Box::new(OscBLIT::new()),
-            //     },
             oscillators: vec![
                 Box::new(OscBLIT::new()), 
                 Box::new(OscBLIT::new()), 
                 Box::new(OscBLIT::new()), 
                 Box::new(OscBLIT::new())
             ],
-            voices: vec![
-                Box::new(voice::Voice::new()), 
-                Box::new(voice::Voice::new()), 
-                Box::new(voice::Voice::new()), 
-                Box::new(voice::Voice::new())
-            ],
+            // voices: vec![
+            //     Box::new(voice::Voice::new()), 
+            //     Box::new(voice::Voice::new()), 
+            //     Box::new(voice::Voice::new()), 
+            //     Box::new(voice::Voice::new())
+            // ],
+            note2osc: [0; NOSC],
             midi_message_processor: Box::new(MidiMessageProcessor::new()),     
             midi_message: Observable::new([0u8,0u8,0u8]),
+            poly: Box::new(Polyphony::new()),     
             fs: Observable::new(types::fs(0f64)),
             // mixer: Box::new([0f32; 5])
         };
@@ -109,6 +112,9 @@ impl<'a> Plugin<'a> {
         if plugin.params_ptr.len() != NPARAMS {
             panic!("Wrong number of parameters")
         }
+        for (i, o) in plugin.note2osc.iter_mut().enumerate() {
+            *o = i as u8
+        } 
         plugin
     }
     pub fn connect(&mut self) {
@@ -122,19 +128,26 @@ impl<'a> Plugin<'a> {
 
 
             let midiproc = &mut*self.midi_message_processor as *mut MidiMessageProcessor;
+            let poly = &mut*self.poly as *mut Polyphony;
 
-            self.params.polyphony.observers.push(&mut *midiproc);
-            self.params.nvoices.observers.push(&mut *midiproc);
-            self.params.unison.observers.push(&mut *midiproc);
+            self.params.polyphony.observers.push(&mut *poly);
+            self.params.nvoices.observers.push(&mut *poly);
+            self.params.unison.observers.push(&mut *poly);
 
+            // self.params.polyphony.observers.push(&mut *midiproc);
+            // self.params.nvoices.observers.push(&mut *midiproc);
+            // self.params.unison.observers.push(&mut *midiproc);
+
+            // self.poly.observers.push()
 
             self.midi_message.observers.push(&mut *midiproc);
+            self.poly.maxnotes.observers.push(&mut *midiproc);
 
-            for (i, voice) in self.voices.iter_mut().enumerate() {
-                let v = &mut**voice  as *mut voice::Voice;
-                self.midi_message_processor.noteon[i].observers.push(&mut *v);
-                self.midi_message_processor.noteoff[i].observers.push(&mut *v);
-            }
+            // for (i, voice) in self.voices.iter_mut().enumerate() {
+            //     let v = &mut**voice  as *mut voice::Voice;
+            //     self.midi_message_processor.noteon[i].observers.push(&mut *v);
+            //     self.midi_message_processor.noteoff[i].observers.push(&mut *v);
+            // }
 
 
         }
@@ -166,11 +179,14 @@ impl<'a> Plugin<'a> {
             let p3 = *(self.params_ptr[ParamName::Unison as usize]);
             let p4 = *(self.params_ptr[ParamName::Voices as usize]);
             let p5 = *(self.params_ptr[ParamName::Detune as usize]);
+
             // let p2 = *(self.params_ptr[ParamName::Postfilter as usize]);
+
             self.params.blit.update(types::blit(to_bool(p1)));
             self.params.polyphony.update(types::polyphony(to_bool(p2)));
             self.params.unison.update(types::unison(to_bool(p3)));
             self.params.nvoices.update(types::nvoices(to_usize(p4)));
+            
             // self.notifyevent_blit(to_bool(p1));
             // self.notifyevent_postfilter(to_bool(p2));
             // (10f32).powf(g / 20f32) * self.synth.get_amp()
@@ -221,5 +237,55 @@ impl<'a> Observer<u32> for Plugin<'a> {
         self.mix();
     }
 }
+
+
+// impl<'a> Observer<types::polyphony> for Plugin<'a> {
+//     fn next(&mut self, p: types::polyphony) {
+//         if p.0 {
+//             if self.unison & (self.nvoices > 1) {
+//                 self.nnotes = self.nvoices / 2;
+//                 // println!("Polyphony on with union, nnotes = {}", self.nnotes);
+//                 return
+//             }
+//             self.nnotes = self.nvoices;
+//             // println!("Polyphony on, union off, nnotes = {}", self.nnotes);
+//             return
+//         }
+//         self.nnotes = 1;
+//         // println!("Polyphony off");
+//     }
+// }
+
+// impl<'a> Observer<types::nvoices> for Plugin<'a> {
+//     fn next(&mut self, p: types::nvoices) {
+//         self.nvoices = p.0;
+//         // println!("Nvoices = {}", self.nvoices);
+//     }
+// }
+
+// impl<'a> Observer<types::note2osc> for Plugin<'a> {
+//     fn next(&mut self, p: types::note2osc) {
+//         self.note2osc = p.0;
+//         println!("NOTE2OSC: ");
+//         for i in self.note2osc.iter() {
+//             print!{" {},", i}
+//         }
+//         io::stdout().flush().unwrap();
+//     }
+// }
+
+
+
+// impl<'a> Observer<types::unison> for Plugin<'a> {
+//     fn next(&mut self, u: types::unison) {
+//         if u.0 {
+//             if 
+//             self.unison = true;
+//             return
+//         }
+//         self.unison = false
+//         // println!("Unison = {}", self.unison);
+//     }
+// }
 
 
