@@ -32,8 +32,8 @@ impl<'a> MidiMessageProcessor<'a> {
         maxnotes: 1,
         notes: [None; NOSC],
         notes_old: [None; NOSC],
-        noteon: Observable::new(types::noteon(0f32,0f32)),
-        noteoff: Observable::new(types::noteoff(0u8)),
+        noteon: Observable::new(types::noteon(0f32, 0f32, 0u8)),
+        noteoff: Observable::new(types::noteoff(0u8, 0u8)),
 
         // noteon: vec![
         //     Observable::new(types::noteon(0f32,0f32)),
@@ -132,13 +132,13 @@ impl<'a> MidiMessageProcessor<'a> {
                         Some(note2) => {
                             if note.note_number() != note2.note_number() {
                                 // self.noteon[i].update(types::noteon(note.f0(), note.vel()))
-                                self.noteon.update(types::noteon(note.f0(), note.vel()))
+                                self.noteon.update(types::noteon(note.f0(), note.vel(), i as u8))
                             }
 
                         }
                         _ => {
                             // self.noteon[i].update(types::noteon(note.f0(), note.vel()))
-                            self.noteon.update(types::noteon(note.f0(), note.vel()))
+                            self.noteon.update(types::noteon(note.f0(), note.vel(), i as u8))
                             }
                     }
                 }
@@ -146,7 +146,7 @@ impl<'a> MidiMessageProcessor<'a> {
                     match self.notes_old[i] {
                         Some(note) => {
                             // self.noteoff[i].update(types::noteoff(note.note_number()))
-                            self.noteoff.update(types::noteoff(note.note_number()))
+                            self.noteoff.update(types::noteoff(note.note_number(), i as u8))
                         }
                         _ => {}
                     }
@@ -176,17 +176,17 @@ impl<'a> Observer<MidiMessage> for MidiMessageProcessor<'a> {
 
         self.update_notes();
 
-        print!("NOTES: ");
-        for i in self.notes.iter() {
-            match *i {
-                Some(mm) => {
-                    print!{" {},", mm.note_number()}
-                }
-                _ => {}
-            }
-        }
-        io::stdout().flush().unwrap();
-        println!("");
+        // print!("NOTES: ");
+        // for i in self.notes.iter() {
+        //     match *i {
+        //         Some(mm) => {
+        //             print!{" {}", mm.note_number()}
+        //         }
+        //         _ => { print!(" **") }
+        //     }
+        // }
+        // io::stdout().flush().unwrap();
+        // println!("");
     }
 }
 

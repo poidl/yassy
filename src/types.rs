@@ -25,10 +25,14 @@ pub struct note2osc(pub [u8; NOSC]);
 pub struct maxnotes(pub u8);
 
 pub struct note((f32,f32));
+
+// f0, vel, voice index
 #[derive(Copy, Clone)]
-pub struct noteon(pub f32, pub f32);
+pub struct noteon(pub f32, pub f32, pub u8);
+// note number, voice index
 #[derive(Copy, Clone)]
-pub struct noteoff(pub u8);
+pub struct noteoff(pub u8, pub u8);
+
 #[derive(Copy, Clone)]
 pub struct f0(pub f32);
 // pub struct gain(f32);

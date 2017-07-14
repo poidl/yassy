@@ -22,7 +22,6 @@ pub struct Voice<'a> {
     // pub osc1: OscBLIT,
     // pub adsr: ADSR,
     pub f0: Observable<'a, types::f0>,
-    pub f1: Observable<'a, types::f0>
 }
 
 impl<'a> Voice<'a> {
@@ -34,7 +33,6 @@ impl<'a> Voice<'a> {
             // osc1: OscBLIT::new(),
             // adsr: ADSR::new(),
             f0: Observable::new(types::f0(0f32)),
-            f1: Observable::new(types::f0(0f32))
         }
     }
     // pub fn connect() {
@@ -54,7 +52,7 @@ impl<'a> Observer<types::noteon> for Voice<'a> {
     fn next(&mut self, no: types::noteon) {
         println!(" VOICE RECEIVED NOTEON: {}", no.0 as f32);
         self.f0.update(types::f0(no.0));
-        self.f1.update(types::f0(2.04f32 * no.0));
+        // self.f1.update(types::f0(2.04f32 * no.0));
         self.vel = no.1
     }
 }

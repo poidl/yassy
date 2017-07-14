@@ -59,7 +59,7 @@ pub struct Plugin<'a> {
     pub params: Params<'a>,
     // pub producers: Producers,
 
-    pub oscillators: Vec<Box<OscBLIT>>,
+    // pub oscillators: Vec<Box<OscBLIT>>,
     // pub voices: Vec<Box<voice::Voice<'a>>>,
     pub note2osc: [u8; NOSC],
     // pub voice2: Box<voice::Voice<'a>>,
@@ -89,12 +89,12 @@ impl<'a> Plugin<'a> {
                 nvoices: Observable::new(types::nvoices(1)),
                 detune: Observable::new(types::detune(0f32)),
             },
-            oscillators: vec![
-                Box::new(OscBLIT::new()), 
-                Box::new(OscBLIT::new()), 
-                Box::new(OscBLIT::new()), 
-                Box::new(OscBLIT::new())
-            ],
+            // oscillators: vec![
+            //     Box::new(OscBLIT::new()), 
+            //     Box::new(OscBLIT::new()), 
+            //     Box::new(OscBLIT::new()), 
+            //     Box::new(OscBLIT::new())
+            // ],
             // voices: vec![
             //     Box::new(voice::Voice::new()), 
             //     Box::new(voice::Voice::new()), 
@@ -119,11 +119,11 @@ impl<'a> Plugin<'a> {
     }
     pub fn connect(&mut self) {
         unsafe {
-            for (i, osc) in self.oscillators.iter_mut().enumerate() {
+            for (i, osc) in self.poly.oscillators.iter_mut().enumerate() {
                 let o = &mut**osc as *mut OscBLIT;
                 self.fs.observers.push(&mut *o);
                 self.params.blit.observers.push(&mut *o);
-                self.voices[i].f0.observers.push(&mut *o);
+                // self.voices[i].f0.observers.push(&mut *o);
             }
 
 
@@ -142,6 +142,10 @@ impl<'a> Plugin<'a> {
 
             self.midi_message.observers.push(&mut *midiproc);
             self.poly.maxnotes.observers.push(&mut *midiproc);
+
+            self.midi_message_processor.noteon.observers.push(&mut *poly);
+            self.midi_message_processor.noteoff.observers.push(&mut *poly);
+
 
             // for (i, voice) in self.voices.iter_mut().enumerate() {
             //     let v = &mut**voice  as *mut voice::Voice;
@@ -186,7 +190,7 @@ impl<'a> Plugin<'a> {
             self.params.polyphony.update(types::polyphony(to_bool(p2)));
             self.params.unison.update(types::unison(to_bool(p3)));
             self.params.nvoices.update(types::nvoices(to_usize(p4)));
-            
+
             // self.notifyevent_blit(to_bool(p1));
             // self.notifyevent_postfilter(to_bool(p2));
             // (10f32).powf(g / 20f32) * self.synth.get_amp()
@@ -194,15 +198,18 @@ impl<'a> Plugin<'a> {
         }
     }
     pub fn mix(&mut self) {
-        let b1 = *self.oscillators[0].buf;
-        let b2 = *self.oscillators[1].buf;
-        let b3 = *self.oscillators[2].buf;
-        let b4 = *self.oscillators[3].buf;
+        let b1 = *self.poly.oscillators[0].buf;
+        let b2 = *self.poly.oscillators[1].buf;
+        let b3 = *self.poly.oscillators[2].buf;
+        let b4 = *self.poly.oscillators[3].buf;
 
-        let vel1 = self.voices[0].vel;
-        let vel2 = self.voices[1].vel;
-        let vel3 = self.voices[2].vel;
-        let vel4 = self.voices[3].vel;
+        let vel1 = self.poly.voices[0].vel;
+        let vel2 = self.poly.voices[1].vel;
+        let vel3 = self.poly.voices[2].vel;
+        let vel4 = self.poly.voices[3].vel;
+
+        // println!{"b1: {}", b1}
+        // println!{"vel1: {}", vel1}
 
         // self.audio_out = vel1*(b1+b2);
         self.audio_out = vel1*b1+ vel2*b2 + vel3*b3 + vel4*b4;
@@ -231,7 +238,7 @@ pub fn to_usize(paramval: f32) -> usize {
 impl<'a> Observer<u32> for Plugin<'a> {
     fn next(&mut self, pos: u32) {
         self.update_params();
-        for o in self.oscillators.iter_mut() {
+        for o in self.poly.oscillators.iter_mut() {
             o.next(pos)
         }
         self.mix();
