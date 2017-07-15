@@ -72,7 +72,6 @@ impl<'a> MidiMessageProcessor<'a> {
         }
         match i_remove {
             Some(i) => {
-                // println!("i_remove:****{}", i);
                 self.notes[i] = None
             }
             _ => {}
@@ -132,6 +131,7 @@ impl<'a> MidiMessageProcessor<'a> {
                         Some(note2) => {
                             if note.note_number() != note2.note_number() {
                                 // self.noteon[i].update(types::noteon(note.f0(), note.vel()))
+                                self.noteoff.update(types::noteoff(note2.note_number(), i as u8));
                                 self.noteon.update(types::noteon(note.f0(), note.vel(), i as u8))
                             }
 

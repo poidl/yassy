@@ -19,7 +19,7 @@ pub struct Polyphony<'a> {
     nvoices: types::nvoices,
     detune: types::detune,
     pub br: Observable<'a, types::note2osc>,
-    voicevec: types::note2osc,
+    pub voicevec: types::note2osc,
     pub maxnotes: Observable<'a, types::maxnotes>,
 }
 
@@ -40,7 +40,10 @@ impl<'a> Polyphony<'a> {
             ],
             polyphony: types::polyphony(false),
             unison: types::unison(false),
-            nvoices: types::nvoices(1),
+            // TODO: must be set to 0 to force an update and subsequent call to 
+            // map_oscillators() when the default for nvoices is set 
+            // (which is 1, not 0)
+            nvoices: types::nvoices(0),
             detune: types::detune(0f32),
             br: Observable::new(types::note2osc([0; NOSC])),
             voicevec: types::note2osc([0; NOSC]),
@@ -69,7 +72,12 @@ impl<'a> Polyphony<'a> {
     // monophony, multiple voices per note
     pub fn mono_unison(&mut self) {
         for i in 0..NOSC {
-            self.voicevec.0[i] = 0;
+            if i <= self.nvoices.0-1 {
+                self.voicevec.0[i] = 0;
+            } else {
+                // don't play these
+                self.voicevec.0[i] = 1;
+            }
         } 
     }
  
@@ -83,7 +91,7 @@ impl<'a> Polyphony<'a> {
 
     // polyphony, 2 voices per note
     pub fn poly_unison(&mut self) {
-        // println!(" SETTING POLY UNISON ");
+        println!(" SETTING POLY UNISON ");
         let mut c = 0u8;
         for i in 0..NOSC {
             self.voicevec.0[i] = c;
@@ -118,16 +126,39 @@ impl<'a> Polyphony<'a> {
         // self.printme();
         self.br.update(self.voicevec);
 
-        // while self.noteon.observers.len > 0 {
-        //     self.noteon.observers.pop()
+        // print!("VOICEVEC: ");
+        // for v in self.voicevec.0.iter() {
+        //     print!(" {}", v)
         // }
+        // io::stdout().flush().unwrap();
+        // println!(" ");
 
-        println!("map ********************");
-        for (i, v) in self.voicevec.0.iter().enumerate() {
-                let o = &mut*self.oscillators[i] as *mut OscBLIT;
-                unsafe {
-                    self.voices[(*v) as usize].f0.observers.push(&mut *o);
+        let mut c = 0;
+        let mut v_old = 0;
+        for v in self.voices.iter_mut() {
+            for o in v.f0oscs.iter_mut() {
+                while o.observers.len() > 0 {
+                    o.observers.pop();
                 }
+            }
+        }
+        for (i, v) in self.voicevec.0.iter().enumerate() {
+            if *v != v_old {
+                c = 0;
+            }
+
+            // print!("Assigning oscillator {}", i);
+            // print!(" to voice {} at f0osc index {}", *v, c);
+            // io::stdout().flush().unwrap();
+            // println!(" ");
+
+            let o = &mut*self.oscillators[i] as *mut OscBLIT;
+            unsafe {
+                self.voices[(*v) as usize].f0oscs[c].observers.push(&mut *o);
+            }
+            c = c+1;
+            v_old = *v;
+
         }
 
     }
@@ -137,38 +168,57 @@ impl<'a> Polyphony<'a> {
 
 impl<'a> Observer<types::polyphony> for Polyphony<'a> {
     fn next(&mut self, p: types::polyphony) {
-        self.polyphony.0 = p.0;
-        self.map_oscillators()
+        if self.polyphony.0 != p.0 {
+            self.polyphony.0 = p.0;
+            self.map_oscillators()
+        }
     }
 }
         
+impl<'a> Observer<types::unison> for Polyphony<'a> {
+    fn next(&mut self, u: types::unison) {
+        if self.unison.0 != u.0 {
+            self.unison.0 = u.0;
+            self.map_oscillators()
+        }
+    }
+}
 
 impl<'a> Observer<types::nvoices> for Polyphony<'a> {
     fn next(&mut self, n: types::nvoices) {
-        self.nvoices = types::nvoices(n.0);
-        // println!("NOSC = {}", self.NOSC);
+        if self.nvoices.0 != n.0 {
+            self.nvoices.0 = n.0;
+            self.map_oscillators()
+        }
     }
 }
 
-impl<'a> Observer<types::unison> for Polyphony<'a> {
-    fn next(&mut self, u: types::unison) {
-        self.unison.0 = u.0;
-        self.map_oscillators()
-    }
-}
 
 impl<'a> Observer<types::noteon> for Polyphony<'a> {
     fn next(&mut self, n: types::noteon) {
 
-        let mut nosc = 0u8;
-        for i in 0..NOSC {
-            if self.voicevec.0[i] == n.2 {
-                println!{"Set f0 for oscillator {}", i}
-                self.voices[i].f0.update(types::f0(n.0));
-                self.voices[i].vel = n.1;
-                nosc = nosc + 1;
-            }
-        }
+                let ivoice = n.2 as usize;
+
+                // print!("VOICEVEC: ");
+                // for v in self.voicevec.0.iter() {
+                //     print!(" {}", v)
+                // }
+                // io::stdout().flush().unwrap();
+                // println!(" ");
+
+                self.voices[ivoice].update_f0(types::f0(n.0));
+                self.voices[ivoice].vel = n.1;
+
+                for i in 0..NOSC {
+                    let ref fvoice = self.voices[i].f0;
+                    let ref fosc = self.oscillators[i].f0;
+                    let ref fnoteon = n.0;
+                    let ref velvoice = self.voices[i].vel;
+                    // print!{"fnoteon: {}, fvoice: {}, velvoice: {}, fosc: {}", fnoteon, fvoice, velvoice, fosc}
+                    // io::stdout().flush().unwrap();
+                    // println!(" ")
+                }
+
         // // normalize velocity for each voice, depending on the number of
         // // oscillators
         // for i in 0..NOSC {
@@ -181,13 +231,8 @@ impl<'a> Observer<types::noteon> for Polyphony<'a> {
 
 impl<'a> Observer<types::noteoff> for Polyphony<'a> {
     fn next(&mut self, n: types::noteoff) {
-
-        let mut nosc = 0u8;
-        for i in 0..NOSC {
-            if self.voicevec.0[i] == n.1 {
-                self.voices[i].vel = 0f32;
-            }
-        }
+        let ivoice = n.1 as usize;
+        self.voices[ivoice].vel = 0f32;
     }
 }
 

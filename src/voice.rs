@@ -6,14 +6,8 @@ use midi;
 use midi::*;
 use types;
 
-// pub trait IsVoice {
-//     fn new() -> Voice;
-//     fn set_fs(&mut self, f64);
-//     fn get_amp(&mut self) -> f32;
-//     fn initialize(&mut self);
-//     fn cleanup(&mut self);
-//     // fn noteoff(&mut self);
-// }
+pub const NOSC: usize = 4;
+
 
 pub struct Voice<'a> {
     // pub f0: f32,
@@ -21,7 +15,9 @@ pub struct Voice<'a> {
     // pub on: bool,
     // pub osc1: OscBLIT,
     // pub adsr: ADSR,
-    pub f0: Observable<'a, types::f0>,
+    // pub f0: Observable<'a, types::f0>,
+    pub f0: f32,
+    pub f0oscs: Box<Vec<Observable<'a, types::f0>>>,
 }
 
 impl<'a> Voice<'a> {
@@ -32,8 +28,25 @@ impl<'a> Voice<'a> {
             // on: false,
             // osc1: OscBLIT::new(),
             // adsr: ADSR::new(),
-            f0: Observable::new(types::f0(0f32)),
+            // f0: Observable::new(types::f0(0f32)),
+            f0: 0f32,
+            f0oscs: Box::new(
+                vec![Observable::new(types::f0(0f32)),
+                Observable::new(types::f0(0f32)),
+                Observable::new(types::f0(0f32)),
+                Observable::new(types::f0(0f32))]
+            )
         }
+    }
+    pub fn update_f0(&mut self, f0: types::f0) {
+        self.f0 = f0.0;
+        let detune = 0.1f32;
+        let mut c = 0f32;
+        for mut f in self.f0oscs.iter_mut() {
+            f.update(types::f0(f0.0 + c * detune));
+            c = c + 1f32;
+        }
+
     }
     // pub fn connect() {
     //     self.midi_message_processor.noteon[0].observers.push(&mut *voice);
@@ -45,22 +58,26 @@ impl<'a> Voice<'a> {
     //     self.midi_message_processor.noteon[3].observers.push(&mut *voice4);
     //     self.midi_message_processor.noteoff[3].observers.push(&mut *voice4);
     // }
-
 }
 
-impl<'a> Observer<types::noteon> for Voice<'a> {
-    fn next(&mut self, no: types::noteon) {
-        println!(" VOICE RECEIVED NOTEON: {}", no.0 as f32);
-        self.f0.update(types::f0(no.0));
-        // self.f1.update(types::f0(2.04f32 * no.0));
-        self.vel = no.1
-    }
-}
-impl<'a> Observer<types::noteoff> for Voice<'a> {
-    fn next(&mut self, no: types::noteoff) {
-        self.vel = 0f32
-    }
-}
+// impl<'a> Observer<types::noteon> for Voice<'a> {
+//     fn next(&mut self, no: types::noteon) {
+//         println!(" VOICE RECEIVED NOTEON: {}", no.0 as f32);
+//         self.f0.update(types::f0(no.0));
+//         // self.f1.update(types::f0(2.04f32 * no.0));
+//         self.vel = no.1
+//     }
+// }
+// impl<'a> Observer<types::noteoff> for Voice<'a> {
+//     fn next(&mut self, no: types::noteoff) {
+//         self.vel = 0f32
+//     }
+// }
+// impl<'a> Observer<types::f0> for Voice<'a> {
+//     fn next(&mut self, no: types::noteoff) {
+//         self.vel = 0f32
+//     }
+// }
 
 
 
@@ -173,5 +190,3 @@ impl<'a> Observer<types::noteoff> for Voice<'a> {
 //     //     self.osc1.cleanup();
 //     // }
 // // }
-
-

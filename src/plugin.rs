@@ -198,21 +198,34 @@ impl<'a> Plugin<'a> {
         }
     }
     pub fn mix(&mut self) {
-        let b1 = *self.poly.oscillators[0].buf;
-        let b2 = *self.poly.oscillators[1].buf;
-        let b3 = *self.poly.oscillators[2].buf;
-        let b4 = *self.poly.oscillators[3].buf;
 
-        let vel1 = self.poly.voices[0].vel;
-        let vel2 = self.poly.voices[1].vel;
-        let vel3 = self.poly.voices[2].vel;
-        let vel4 = self.poly.voices[3].vel;
+        let bufs = [
+            *self.poly.oscillators[0].buf,
+            *self.poly.oscillators[1].buf,
+            *self.poly.oscillators[2].buf,
+            *self.poly.oscillators[3].buf,
+        ];
+
+        let vels = [
+             self.poly.voices[0].vel,
+             self.poly.voices[1].vel,
+             self.poly.voices[2].vel,
+             self.poly.voices[3].vel,
+        ];
+
+        let vv = self.poly.voicevec.0;
 
         // println!{"b1: {}", b1}
         // println!{"vel1: {}", vel1}
 
         // self.audio_out = vel1*(b1+b2);
-        self.audio_out = vel1*b1+ vel2*b2 + vel3*b3 + vel4*b4;
+        // println!("asdf {}",vv[0]);
+        // println!("asdf {}",vels[vv[0] as usize]);
+        // println!("asdf {}",vv[0])
+        self.audio_out = vels[vv[0] as usize]*bufs[0] + 
+                         vels[vv[1] as usize]*bufs[1] + 
+                         vels[vv[2] as usize]*bufs[2] + 
+                         vels[vv[3] as usize]*bufs[3];
     }
 }
 
