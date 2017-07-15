@@ -6,7 +6,7 @@ use midi;
 use midi::*;
 use types;
 
-pub const NOSC: usize = 4;
+pub const NOSC: usize = 11;
 
 
 pub struct Voice<'a> {
@@ -31,16 +31,25 @@ impl<'a> Voice<'a> {
             // f0: Observable::new(types::f0(0f32)),
             f0: 0f32,
             f0oscs: Box::new(
-                vec![Observable::new(types::f0(0f32)),
-                Observable::new(types::f0(0f32)),
-                Observable::new(types::f0(0f32)),
-                Observable::new(types::f0(0f32))]
+                vec![
+                    Observable::new(types::f0(0f32)),
+                    Observable::new(types::f0(0f32)),
+                    Observable::new(types::f0(0f32)),
+                    Observable::new(types::f0(0f32)),
+                    Observable::new(types::f0(0f32)),
+                    Observable::new(types::f0(0f32)),
+                    Observable::new(types::f0(0f32)),
+                    Observable::new(types::f0(0f32)),
+                    Observable::new(types::f0(0f32)),
+                    Observable::new(types::f0(0f32)),
+                    Observable::new(types::f0(0f32)),
+                ]
             )
         }
     }
     pub fn update_f0(&mut self, f0: types::f0) {
         self.f0 = f0.0;
-        let detune = 0.1f32;
+        let detune = 0.5f32;
         let mut c = 0f32;
         for mut f in self.f0oscs.iter_mut() {
             f.update(types::f0(f0.0 + c * detune));

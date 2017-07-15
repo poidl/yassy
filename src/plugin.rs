@@ -19,7 +19,7 @@ use std::io::Write;
 
 // Number of parameters
 pub const NPARAMS: usize = 5;
-pub const NOSC: usize = 4;
+pub const NOSC: usize = 11;
 
 pub enum ParamName {
     // Gain,
@@ -204,6 +204,13 @@ impl<'a> Plugin<'a> {
             *self.poly.oscillators[1].buf,
             *self.poly.oscillators[2].buf,
             *self.poly.oscillators[3].buf,
+            *self.poly.oscillators[4].buf,
+            *self.poly.oscillators[5].buf,
+            *self.poly.oscillators[6].buf,
+            *self.poly.oscillators[7].buf,
+            *self.poly.oscillators[8].buf,
+            *self.poly.oscillators[9].buf,
+            *self.poly.oscillators[10].buf,
         ];
 
         let vels = [
@@ -211,6 +218,13 @@ impl<'a> Plugin<'a> {
              self.poly.voices[1].vel,
              self.poly.voices[2].vel,
              self.poly.voices[3].vel,
+             self.poly.voices[4].vel,
+             self.poly.voices[5].vel,
+             self.poly.voices[6].vel,
+             self.poly.voices[7].vel,
+             self.poly.voices[8].vel,
+             self.poly.voices[9].vel,
+             self.poly.voices[10].vel,
         ];
 
         let vv = self.poly.voicevec.0;
@@ -225,7 +239,14 @@ impl<'a> Plugin<'a> {
         self.audio_out = vels[vv[0] as usize]*bufs[0] + 
                          vels[vv[1] as usize]*bufs[1] + 
                          vels[vv[2] as usize]*bufs[2] + 
-                         vels[vv[3] as usize]*bufs[3];
+                         vels[vv[3] as usize]*bufs[3] + 
+                         vels[vv[4] as usize]*bufs[4] + 
+                         vels[vv[5] as usize]*bufs[5] + 
+                         vels[vv[6] as usize]*bufs[6] + 
+                         vels[vv[7] as usize]*bufs[7] + 
+                         vels[vv[8] as usize]*bufs[8] + 
+                         vels[vv[9] as usize]*bufs[9] + 
+                         vels[vv[10] as usize]*bufs[10];
     }
 }
 

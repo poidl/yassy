@@ -1,4 +1,4 @@
-pub const NOSC: usize = 4;
+pub const NOSC: usize = 11;
 
 #[derive(Copy, Clone)]
 pub struct fs(pub f64);

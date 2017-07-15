@@ -9,7 +9,7 @@ use std::io::Write;
 use oscillator::*;
 use voice;
 
-const NOSC: usize = 4;
+const NOSC: usize = 11;
 
 pub struct Polyphony<'a> {
     pub oscillators: Vec<Box<OscBLIT>>,
@@ -30,9 +30,23 @@ impl<'a> Polyphony<'a> {
                 Box::new(OscBLIT::new()), 
                 Box::new(OscBLIT::new()), 
                 Box::new(OscBLIT::new()), 
-                Box::new(OscBLIT::new())
+                Box::new(OscBLIT::new()),
+                Box::new(OscBLIT::new()),
+                Box::new(OscBLIT::new()),
+                Box::new(OscBLIT::new()),
+                Box::new(OscBLIT::new()),
+                Box::new(OscBLIT::new()),
+                Box::new(OscBLIT::new()),
+                Box::new(OscBLIT::new()),
             ],
             voices: vec![
+                Box::new(voice::Voice::new()),
+                Box::new(voice::Voice::new()),
+                Box::new(voice::Voice::new()),
+                Box::new(voice::Voice::new()),
+                Box::new(voice::Voice::new()),
+                Box::new(voice::Voice::new()),
+                Box::new(voice::Voice::new()),
                 Box::new(voice::Voice::new()),
                 Box::new(voice::Voice::new()),
                 Box::new(voice::Voice::new()),

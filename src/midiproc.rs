@@ -7,7 +7,7 @@ use midi::*;
 use std::io;
 use std::io::Write;
 
-const NOSC: usize = 4;
+const NOSC: usize = 11;
 
 pub struct MidiMessageProcessor<'a> {
     pub note_stack: Vec<[u8;3]>,
@@ -26,7 +26,7 @@ pub struct MidiMessageProcessor<'a> {
 impl<'a> MidiMessageProcessor<'a> {
     pub fn new() -> MidiMessageProcessor<'a> {
     let p = MidiMessageProcessor { 
-        note_stack: Vec::with_capacity(10),
+        note_stack: Vec::with_capacity(15),
         // nvoices: 1,
         // unison: false,
         maxnotes: 1,
