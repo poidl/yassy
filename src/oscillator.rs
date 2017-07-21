@@ -69,7 +69,7 @@ impl PhaseAccumulator {
 pub trait Oscillator {
     fn set_fs(&mut self, types::fs);
     fn reset(&mut self, f32);
-    fn get_amp(&mut self) -> f32;
+    fn get_amp(&mut self);
     fn cleanup(&mut self);
 }
 
@@ -88,20 +88,20 @@ impl OscBasic {
 /// Make an Oscillator from a PhaseAccumulator by adding get_amp()
 /// and cleanup(). Non-bandlimited, for testing only.
 
-impl Oscillator for OscBasic {
-    fn set_fs(&mut self, fs: types::fs) {
-        self.pa.set_fs(fs)
-    }
-    fn reset(&mut self, f0: f32) {
-        self.pa.reset(f0 as f64)
-    }
-    fn get_amp(&mut self) -> f32 {
-        self.pa.step();
-        let phi: f32 = (self.pa.a as f64 / self.pa.n as f64) as f32;
-        return phi;
-    }
-    fn cleanup(&mut self) {}
-}
+// impl Oscillator for OscBasic {
+//     fn set_fs(&mut self, fs: types::fs) {
+//         self.pa.set_fs(fs)
+//     }
+//     fn reset(&mut self, f0: f32) {
+//         self.pa.reset(f0 as f64)
+//     }
+//     fn get_amp(&mut self) {
+//         self.pa.step();
+//         let phi: f32 = (self.pa.a as f64 / self.pa.n as f64) as f32;
+//         return phi;
+//     }
+//     fn cleanup(&mut self) {}
+// }
 
 // ****************************************************
 
@@ -256,15 +256,14 @@ impl OscBLIT {
             self.d = self.pf_b0 * self.d - self.pf_a1 * self.d_old;
             self.d_old = self.d;
         }
-
+        *self.buf = self.d as f32;
     }
 
-    pub fn get(&mut self) -> f64 {
+    pub fn get(&mut self) {
         self.step_ab();
         self.set_alpha_i();
         self.step_c();
         self.step_d();
-        self.d as f64
     }
 }
 
@@ -275,8 +274,8 @@ impl Oscillator for OscBLIT {
     fn reset(&mut self, f0: f32) {
         self.reset(f0 as f64);
     }
-    fn get_amp(&mut self) -> f32 {
-        self.get() as f32
+    fn get_amp(&mut self) {
+        self.get()
     }
     fn cleanup(&mut self) {}
 }
@@ -362,7 +361,6 @@ impl Observer<u32> for OscBLIT {
             let amp = self.get_amp();
             // println!("******** AMP: {}", amp);
             // self.buf = &mut self.get_amp() as *mut f32;
-            *self.buf = amp;
         }
     }
 }

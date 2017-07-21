@@ -49,6 +49,7 @@ pub struct Params<'a> {
 pub struct Plugin<'a> {
     pub audio_out: f32,
     pub params_ptr: [*mut f32; NPARAMS],
+    pub params_old: [f32; NPARAMS],
     pub params: Params<'a>,
     pub note2osc: [u8; NOSC],
     pub midi_message_processor: MidiMessageProcessor<'a>,
@@ -65,6 +66,7 @@ impl<'a> Plugin<'a> {
             audio_out: 0f32,
             // params_ptr: [&mut 0.5f32, &mut 1f32, &mut 1f32],
             params_ptr: [&mut 1f32, &mut 0f32, &mut 0f32, &mut 1f32, &mut 0f32],
+            params_old: [-99999f32; NPARAMS],
             params: Params {
                 // gain: Observable::new(types::gain(0.5f32))
                 blit: Observable::new(types::blit(true)),
@@ -142,18 +144,36 @@ impl<'a> Plugin<'a> {
     pub fn update_params(&mut self) {
         unsafe {
             // let g = *(self.params_ptr[ParamName::Gain as usize]);
-            let p1 = *(self.params_ptr[ParamName::BLIT as usize]);
-            let p2 = *(self.params_ptr[ParamName::Polyphony as usize]);
-            let p3 = *(self.params_ptr[ParamName::Unison as usize]);
-            let p4 = *(self.params_ptr[ParamName::Voices as usize]);
-            let p5 = *(self.params_ptr[ParamName::Detune as usize]);
+            let p0 = self.params_ptr[ParamName::BLIT as usize];
+            let p1 = self.params_ptr[ParamName::Polyphony as usize];
+            let p2 = self.params_ptr[ParamName::Unison as usize];
+            let p3 = self.params_ptr[ParamName::Voices as usize];
+            let p4 = self.params_ptr[ParamName::Detune as usize];
 
             // let p2 = *(self.params_ptr[ParamName::Postfilter as usize]);
 
-            self.params.blit.update(types::blit(to_bool(p1)));
-            self.params.polyphony.update(types::polyphony(to_bool(p2)));
-            self.params.unison.update(types::unison(to_bool(p3)));
-            self.params.nvoices.update(types::nvoices(to_usize(p4)));
+            if *p0 != self.params_old[0] {
+                self.params.blit.update(types::blit(to_bool(*p0)));
+                self.params_old[0] = *p0;
+            }
+            if *p1 != self.params_old[1] {
+                self.params.polyphony.update(types::polyphony(to_bool(*p1)));
+                self.params_old[1] = *p1;
+            }
+            if *p2 != self.params_old[2] {
+                self.params.unison.update(types::unison(to_bool(*p2)));
+                self.params_old[2] = *p2;
+            }
+            if *p3 != self.params_old[3] {
+                self.params.nvoices.update(types::nvoices(to_usize(*p3)));
+                self.params_old[3] = *p3;
+            }
+            if *p4 != self.params_old[4] {
+                self.params.nvoices.update(types::nvoices(to_usize(*p3)));
+                self.params_old[4] = *p3;
+            }
+
+
 
             // self.notifyevent_blit(to_bool(p1));
             // self.notifyevent_postfilter(to_bool(p2));
@@ -237,15 +257,15 @@ pub fn to_usize(paramval: f32) -> usize {
     return paramval.trunc() as usize;
 }
 
-impl<'a> Observer<u32> for Plugin<'a> {
-    fn next(&mut self, pos: u32) {
-        self.update_params();
-        for o in self.poly.oscillators.iter_mut() {
-            o.next(pos)
-        }
-        self.mix();
-    }
-}
+// impl<'a> Observer<u32> for Plugin<'a> {
+//     fn next(&mut self, pos: u32) {
+//         self.update_params();
+//         for o in self.poly.oscillators.iter_mut() {
+//             o.next(pos)
+//         }
+//         self.mix();
+//     }
+// }
 
 
 // impl<'a> Observer<types::polyphony> for Plugin<'a> {

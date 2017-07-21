@@ -57,7 +57,7 @@ impl<'a> Lv2Plugin<'a> {
             let r1 = &mut self.plugin as *mut plugin::Plugin;
             // Can do this here because plugin is a Box. If plugin was allocated
             // on the stack, this would have to be done ouside of new()
-            self.bufferpos.observers.push(&mut *r1);
+            // self.bufferpos.observers.push(&mut *r1);
             let mut bb1 = &mut self.plugin.audio_out as *mut f32;
             // let mut ga = &mut*self.in_port_synth;
             self.audio_out = bb1;
@@ -109,7 +109,29 @@ impl<'a> Lv2Plugin<'a> {
                 println!("Processing MIDI...");
                 while i < ievent {
                     // let amp = self.get_amp();
-                    self.bufferpos.update(i);
+                    // self.bufferpos.update(i);
+                    self.plugin.update_params();
+                    // for o in self.plugin.poly.oscillators.iter_mut() {
+                    //     o.get_amp();
+                    // }
+                    self.plugin.poly.oscillators[0].get_amp();
+                    self.plugin.poly.oscillators[1].get_amp();
+                    self.plugin.poly.oscillators[2].get_amp();
+                    self.plugin.poly.oscillators[3].get_amp();
+                    self.plugin.poly.oscillators[4].get_amp();
+                    self.plugin.poly.oscillators[5].get_amp();
+                    self.plugin.poly.oscillators[6].get_amp();
+                    self.plugin.poly.oscillators[7].get_amp();
+                    self.plugin.poly.oscillators[8].get_amp();
+                    self.plugin.poly.oscillators[9].get_amp();
+                    self.plugin.poly.oscillators[10].get_amp();
+                        
+
+                    self.plugin.mix();
+                    
+
+
+
                     *self.audio_out.offset(i as isize) = self.plugin.audio_out;
                     i =  i+1;
                 }
@@ -117,7 +139,24 @@ impl<'a> Lv2Plugin<'a> {
                 self.plugin.midi_message.update(mm);
             }
             while i < n_samples {
-                self.bufferpos.update(i);
+                // self.bufferpos.update(i);
+                self.plugin.update_params();
+                // for o in self.plugin.poly.oscillators.iter_mut() {
+                //     o.get_amp();
+                // }
+                self.plugin.poly.oscillators[0].get_amp();
+                self.plugin.poly.oscillators[1].get_amp();
+                self.plugin.poly.oscillators[2].get_amp();
+                self.plugin.poly.oscillators[3].get_amp();
+                self.plugin.poly.oscillators[4].get_amp();
+                self.plugin.poly.oscillators[5].get_amp();
+                self.plugin.poly.oscillators[6].get_amp();
+                self.plugin.poly.oscillators[7].get_amp();
+                self.plugin.poly.oscillators[8].get_amp();
+                self.plugin.poly.oscillators[9].get_amp();
+                self.plugin.poly.oscillators[10].get_amp();
+
+                self.plugin.mix();
                 // println!(" *self.audio_out.offset(i as isize): {}", *self.audio_out.offset(i as isize));
                 *self.audio_out.offset(i as isize) = self.plugin.audio_out;
                 // println!{"********* DEAD **********"}
@@ -163,6 +202,7 @@ impl<'a> Lv2Plugin<'a> {
         } else {
             panic!("Not a valid PortIndex: {}", iport)
         }
+        // self.plugin.update_params();
     }
     // pub fn cleanup(&mut self) {
     //     self.plugin.cleanup();
