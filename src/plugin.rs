@@ -120,7 +120,7 @@ impl<'a> Plugin<'a> {
     pub fn connect(&mut self) {
         unsafe {
             for (i, osc) in self.poly.oscillators.iter_mut().enumerate() {
-                let o = &mut**osc as *mut OscBLIT;
+                let o = &mut*osc as *mut OscBLIT;
                 self.fs.observers.push(&mut *o);
                 self.params.blit.observers.push(&mut *o);
                 // self.voices[i].f0.observers.push(&mut *o);

@@ -12,8 +12,10 @@ use voice;
 const NOSC: usize = 11;
 
 pub struct Polyphony<'a> {
-    pub oscillators: Vec<Box<OscBLIT>>,
-    pub voices: Vec<Box<voice::Voice<'a>>>,
+    // pub oscillators: Vec<Box<OscBLIT>>,
+    // pub voices: Vec<Box<voice::Voice<'a>>>,
+    pub oscillators: Vec<OscBLIT>,
+    pub voices: Vec<voice::Voice<'a>>,
     polyphony: types::polyphony,
     unison: types::unison,
     nvoices: types::nvoices,
@@ -26,31 +28,57 @@ pub struct Polyphony<'a> {
 impl<'a> Polyphony<'a> {
     pub fn new() -> Polyphony<'a> {
         let mut p = Polyphony {
+            // oscillators: vec![
+            //     Box::new(OscBLIT::new()), 
+            //     Box::new(OscBLIT::new()), 
+            //     Box::new(OscBLIT::new()), 
+            //     Box::new(OscBLIT::new()),
+            //     Box::new(OscBLIT::new()),
+            //     Box::new(OscBLIT::new()),
+            //     Box::new(OscBLIT::new()),
+            //     Box::new(OscBLIT::new()),
+            //     Box::new(OscBLIT::new()),
+            //     Box::new(OscBLIT::new()),
+            //     Box::new(OscBLIT::new()),
+            // ],
+            // voices: vec![
+            //     Box::new(voice::Voice::new()),
+            //     Box::new(voice::Voice::new()),
+            //     Box::new(voice::Voice::new()),
+            //     Box::new(voice::Voice::new()),
+            //     Box::new(voice::Voice::new()),
+            //     Box::new(voice::Voice::new()),
+            //     Box::new(voice::Voice::new()),
+            //     Box::new(voice::Voice::new()),
+            //     Box::new(voice::Voice::new()),
+            //     Box::new(voice::Voice::new()),
+            //     Box::new(voice::Voice::new()),
+            // ],
             oscillators: vec![
-                Box::new(OscBLIT::new()), 
-                Box::new(OscBLIT::new()), 
-                Box::new(OscBLIT::new()), 
-                Box::new(OscBLIT::new()),
-                Box::new(OscBLIT::new()),
-                Box::new(OscBLIT::new()),
-                Box::new(OscBLIT::new()),
-                Box::new(OscBLIT::new()),
-                Box::new(OscBLIT::new()),
-                Box::new(OscBLIT::new()),
-                Box::new(OscBLIT::new()),
+                OscBLIT::new(), 
+                OscBLIT::new(), 
+                OscBLIT::new(), 
+                OscBLIT::new(),
+                OscBLIT::new(),
+                OscBLIT::new(),
+                OscBLIT::new(),
+                OscBLIT::new(),
+                OscBLIT::new(),
+                OscBLIT::new(),
+                OscBLIT::new(),
             ],
             voices: vec![
-                Box::new(voice::Voice::new()),
-                Box::new(voice::Voice::new()),
-                Box::new(voice::Voice::new()),
-                Box::new(voice::Voice::new()),
-                Box::new(voice::Voice::new()),
-                Box::new(voice::Voice::new()),
-                Box::new(voice::Voice::new()),
-                Box::new(voice::Voice::new()),
-                Box::new(voice::Voice::new()),
-                Box::new(voice::Voice::new()),
-                Box::new(voice::Voice::new()),
+                voice::Voice::new(),
+                voice::Voice::new(),
+                voice::Voice::new(),
+                voice::Voice::new(),
+                voice::Voice::new(),
+                voice::Voice::new(),
+                voice::Voice::new(),
+                voice::Voice::new(),
+                voice::Voice::new(),
+                voice::Voice::new(),
+                voice::Voice::new(),
             ],
             polyphony: types::polyphony(false),
             unison: types::unison(false),
@@ -166,7 +194,7 @@ impl<'a> Polyphony<'a> {
             // io::stdout().flush().unwrap();
             // println!(" ");
 
-            let o = &mut*self.oscillators[i] as *mut OscBLIT;
+            let o = &mut self.oscillators[i] as *mut OscBLIT;
             unsafe {
                 self.voices[(*v) as usize].f0oscs[c].observers.push(&mut *o);
             }
