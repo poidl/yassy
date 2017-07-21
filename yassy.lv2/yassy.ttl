@@ -7,8 +7,8 @@
 @prefix ui:    <http://lv2plug.in/ns/extensions/ui#> .
 
 <http://example.org/yassy>
-	a lv2:Plugin ,
-		lv2:Synthesizer ;
+	a lv2:Plugin ;
+        a lv2:InstrumentPlugin
 
 	lv2:project <http://example.org> ;
 
