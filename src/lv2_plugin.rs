@@ -35,7 +35,7 @@ pub struct Lv2Plugin<'a> {
     pub audio_out: *mut f32,
     // pub in_port_time: *const lv2::LV2AtomSequence,
     pub uris: Synthuris,
-    pub plugin: Box<plugin::Plugin<'a>>,
+    pub plugin: plugin::Plugin<'a>,
     pub bufferpos: Observable<'a, u32>
 }
 
@@ -47,19 +47,23 @@ impl<'a> Lv2Plugin<'a> {
             audio_out: ptr::null_mut(),
             // in_port_time: ptr::null(),
             uris: Synthuris::new(),
-            plugin: Box::new(plugin::Plugin::new()),
+            plugin: plugin::Plugin::new(),
             bufferpos: Observable::new(0u32), 
         };
+        lv2plugin
+    }
+    pub fn connect(&mut self) {
         unsafe {
-            let r1 = &mut *lv2plugin.plugin as *mut plugin::Plugin;
+            let r1 = &mut self.plugin as *mut plugin::Plugin;
             // Can do this here because plugin is a Box. If plugin was allocated
             // on the stack, this would have to be done ouside of new()
-            lv2plugin.bufferpos.observers.push(&mut *r1);
-            let mut bb1 = &mut lv2plugin.plugin.audio_out as *mut f32;
-            // let mut ga = &mut*lv2plugin.in_port_synth;
-            lv2plugin.audio_out = bb1;
+            self.bufferpos.observers.push(&mut *r1);
+            let mut bb1 = &mut self.plugin.audio_out as *mut f32;
+            // let mut ga = &mut*self.in_port_synth;
+            self.audio_out = bb1;
         }
-        lv2plugin
+        self.plugin.connect();
+
     }
     pub fn run(&mut self, n_samples: u32) {
         unsafe {

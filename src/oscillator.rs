@@ -242,7 +242,7 @@ impl OscBLIT {
         }
     }
     pub fn step_d(&mut self) {
-        let n = self.pa.n as f64;
+        let n = &(self.pa.n as f64);
         self.d = self.b as f64 / n;
         if self.use_blit {
             if self.b > 0i32 {

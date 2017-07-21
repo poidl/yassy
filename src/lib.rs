@@ -32,6 +32,7 @@ impl Descriptor {
         unsafe {
 
         let mut bx = Box::new(lv2_plugin::Lv2Plugin::new());
+        bx.connect();
         let featureptr = lv2::mapfeature(hostfeatures, "http://lv2plug.in/ns/ext/urid#map");
         match featureptr {
             Ok(fp) => bx.map = fp as *mut lv2::LV2UridMap,

@@ -14,8 +14,8 @@ const NOSC: usize = 11;
 pub struct Polyphony<'a> {
     // pub oscillators: Vec<Box<OscBLIT>>,
     // pub voices: Vec<Box<voice::Voice<'a>>>,
-    pub oscillators: Vec<OscBLIT>,
-    pub voices: Vec<voice::Voice<'a>>,
+    pub oscillators: [OscBLIT; NOSC],
+    pub voices: [voice::Voice<'a>; NOSC],
     polyphony: types::polyphony,
     unison: types::unison,
     nvoices: types::nvoices,
@@ -54,7 +54,7 @@ impl<'a> Polyphony<'a> {
             //     Box::new(voice::Voice::new()),
             //     Box::new(voice::Voice::new()),
             // ],
-            oscillators: vec![
+            oscillators: [
                 OscBLIT::new(), 
                 OscBLIT::new(), 
                 OscBLIT::new(), 
@@ -67,7 +67,7 @@ impl<'a> Polyphony<'a> {
                 OscBLIT::new(),
                 OscBLIT::new(),
             ],
-            voices: vec![
+            voices: [
                 voice::Voice::new(),
                 voice::Voice::new(),
                 voice::Voice::new(),
